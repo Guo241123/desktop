@@ -1,0 +1,57 @@
+{
+  "name": "desktop-pet",
+  "version": "1.0.0",
+  "main": "src/main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "electron": "electron .",
+    "start": "npm run build && npm run electron",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^30.0.0",
+    "electron-builder": "^26.15.3",
+    "vite": "^5.0.0"
+  },
+  "dependencies": {
+    "axios": "^1.16.1",
+    "three": "^0.164.0"
+  },
+  "build": {
+    "appId": "com.desktoppet.engine",
+    "productName": "DesktopPet",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "src/**/*",
+      "dist/**/*",
+      "node_modules/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "../Desktop_Pet_Engine/dist/backend",
+        "to": "backend"
+      }
+    ],
+    "win": {
+      "target": [
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "installerIcon": null,
+      "uninstallerIcon": null,
+      "installerHeaderIcon": null
+    },
+    "asarUnpack": [
+      "dist/model/*.glb",
+      "dist/model/*.png",
+      "src/renderer/model/*"
+    ]
+  }
+}

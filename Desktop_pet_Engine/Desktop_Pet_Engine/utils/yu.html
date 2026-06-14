@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML 预览器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+            background: #f5f5f7;
+            color: #333;
+            overflow: hidden;
+            height: 100vh;
+        }
+        
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+        
+        .canvas-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 400px;
+            overflow: hidden;
+        }
+        
+        .toolbar {
+            height: 48px;
+            background: #fff;
+            border-bottom: 1px solid #e5e5e5;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+        
+        .toolbar-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+        
+        .toolbar-divider {
+            flex: 1;
+        }
+        
+        .toolbar-btn {
+            padding: 6px 14px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.15s;
+        }
+        
+        .toolbar-btn.primary {
+            background: #007aff;
+            color: #fff;
+        }
+        
+        .toolbar-btn.primary:hover {
+            background: #0056d6;
+        }
+        
+        .toolbar-btn.secondary {
+            background: transparent;
+            color: #666;
+            border: 1px solid #e5e5e5;
+        }
+        
+        .toolbar-btn.secondary:hover {
+            background: #f5f5f7;
+            color: #333;
+        }
+        
+        .canvas-wrapper {
+            flex: 1;
+            overflow: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: #f5f5f7;
+        }
+        
+        .preview-box {
+            width: 100%;
+            max-width: 100%;
+            aspect-ratio: 4 / 3;
+            background: #fff;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.08);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        #preview-frame {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+        
+        .status-bar {
+            height: 36px;
+            background: #fff;
+            border-top: 1px solid #e5e5e5;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            font-size: 12px;
+            color: #999;
+            gap: 16px;
+            flex-shrink: 0;
+        }
+        
+        .status-bar .divider {
+            width: 1px;
+            height: 14px;
+            background: #e5e5e5;
+        }
+        
+        .input-bar {
+            height: 40px;
+            background: #fff;
+            border-top: 1px solid #e5e5e5;
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        
+        .input-bar input {
+            flex: 1;
+            height: 28px;
+            border: 1px solid #e5e5e5;
+            border-radius: 4px;
+            padding: 0 10px;
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+        
+        .input-bar input:focus {
+            border-color: #007aff;
+        }
+        
+        .input-bar .send-btn {
+            height: 28px;
+            padding: 0 14px;
+            border: none;
+            border-radius: 4px;
+            background: #007aff;
+            color: #fff;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        
+        .input-bar .send-btn:hover {
+            background: #0056d6;
+        }
+        
+        .sidebar {
+            width: 500px;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            border-left: 1px solid #e5e5e5;
+        }
+        
+        .sidebar-top {
+            height: 30%;
+            display: flex;
+            flex-direction: column;
+            border-bottom: 1px solid #e5e5e5;
+        }
+        
+        .sidebar-top-header {
+            height: 48px;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #e5e5e5;
+            flex-shrink: 0;
+        }
+        
+        .sidebar-top-header h2 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+        
+        .sidebar-top-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+        }
+        
+        .sidebar-bottom {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .sidebar-bottom-header {
+            height: 48px;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #e5e5e5;
+            flex-shrink: 0;
+        }
+        
+        .sidebar-bottom-header h2 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+        
+        .sidebar-bottom-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+        }
+        
+        .section-title {
+            font-size: 11px;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            padding: 0 8px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+        
+        .empty-state p {
+            font-size: 12px;
+        }
+        
+        #file-input {
+            display: none;
+        }
+        
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #d1d1d6;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="canvas-area">
+            <div class="toolbar">
+                <span class="toolbar-title">HTML 预览器</span>
+                <span class="toolbar-divider"></span>
+                <button class="toolbar-btn primary" onclick="editor.importFolder()">导入</button>
+                <button class="toolbar-btn secondary" onclick="editor.exportHTML()">导出</button>
+            </div>
+            <div class="canvas-wrapper" id="canvas-wrapper">
+                <div class="preview-box" id="preview-box">
+                    <iframe id="preview-frame" sandbox="allow-scripts allow-same-origin"></iframe>
+                </div>
+            </div>
+            <div class="status-bar">
+                <span id="status-msg">就绪</span>
+                <span class="divider"></span>
+                <span id="preview-size">- × -</span>
+            </div>
+            <div class="input-bar">
+                <input type="text" id="api-input" placeholder="输入内容...">
+                <button class="send-btn" onclick="editor.send()">发送</button>
+            </div>
+        </div>
+        
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-top">
+                <div class="sidebar-top-header">
+                    <h2>上面</h2>
+                </div>
+                <div class="sidebar-top-content">
+                    <div class="section-title">预留区域</div>
+                    <div class="empty-state">
+                        <p>暂无内容</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="sidebar-bottom">
+                <div class="sidebar-bottom-header">
+                    <h2>下面</h2>
+                </div>
+                <div class="sidebar-bottom-content">
+                    <div class="section-title">预留区域</div>
+                    <div class="empty-state">
+                        <p>暂无内容</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <input type="file" id="file-input" webkitdirectory directory onchange="editor.handleFolder(event)">
+    
+    <script>
+        class HTMLPreviewer {
+            constructor() {
+                this.previewFrame = document.getElementById('preview-frame');
+                this.previewBox = document.getElementById('preview-box');
+                this.apiInput = document.getElementById('api-input');
+                this.fileMap = new Map();
+                this.currentHTML = '';
+                
+                this.initDragDrop();
+                this.initSizeObserver();
+                this.initInput();
+            }
+            
+            initInput() {
+                this.apiInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') this.send();
+                });
+            }
+            
+            send() {
+                const text = this.apiInput.value.trim();
+                if (!text) return;
+                console.log('发送:', text);
+                // 这里接接口
+                this.apiInput.value = '';
+            }
+            
+            initSizeObserver() {
+                const updateSize = () => {
+                    const w = this.previewBox.clientWidth;
+                    const h = this.previewBox.clientHeight;
+                    document.getElementById('preview-size').textContent = `${Math.round(w)} × ${Math.round(h)}`;
+                };
+                
+                const ro = new ResizeObserver(updateSize);
+                ro.observe(this.previewBox);
+                window.addEventListener('resize', updateSize);
+                updateSize();
+            }
+            
+            initDragDrop() {
+                const wrapper = document.getElementById('canvas-wrapper');
+                
+                wrapper.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'copy';
+                });
+                
+                wrapper.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    const items = e.dataTransfer.items;
+                    if (!items) return;
+                    
+                    const files = [];
+                    const promises = [];
+                    
+                    for (let i = 0; i < items.length; i++) {
+                        const item = items[i].webkitGetAsEntry();
+                        if (item) {
+                            promises.push(this.traverseDirectory(item, '', files));
+                        }
+                    }
+                    
+                    Promise.all(promises).then(() => {
+                        if (files.length > 0) {
+                            this.processFiles(files);
+                        }
+                    });
+                });
+            }
+            
+            traverseDirectory(entry, path, files) {
+                return new Promise((resolve) => {
+                    if (entry.isFile) {
+                        entry.file((file) => {
+                            file.webkitRelativePath = path + file.name;
+                            files.push(file);
+                            resolve();
+                        });
+                    } else if (entry.isDirectory) {
+                        const reader = entry.createReader();
+                        reader.readEntries((entries) => {
+                            const promises = entries.map((child) => 
+                                this.traverseDirectory(child, path + entry.name + '/', files)
+                            );
+                            Promise.all(promises).then(resolve);
+                        });
+                    }
+                });
+            }
+            
+            importFolder() {
+                document.getElementById('file-input').click();
+            }
+            
+            handleFolder(event) {
+                const files = Array.from(event.target.files);
+                if (files.length > 0) {
+                    this.processFiles(files);
+                }
+            }
+            
+            async processFiles(files) {
+                this.fileMap.clear();
+                
+                files.forEach(file => {
+                    const path = file.webkitRelativePath || file.name;
+                    const parts = path.split('/');
+                    parts.shift();
+                    const relativePath = parts.join('/');
+                    this.fileMap.set(relativePath, file);
+                    this.fileMap.set(path, file);
+                });
+                
+                let mainFile = null;
+                for (const [path, file] of this.fileMap) {
+                    if (path.endsWith('index.html')) {
+                        mainFile = file;
+                        break;
+                    }
+                }
+                
+                if (!mainFile) {
+                    for (const [path, file] of this.fileMap) {
+                        if (path.endsWith('.html')) {
+                            mainFile = file;
+                            break;
+                        }
+                    }
+                }
+                
+                if (!mainFile) {
+                    alert('未找到 HTML 文件');
+                    return;
+                }
+                
+                const html = await this.readText(mainFile);
+                this.currentHTML = await this.processHTML(html);
+                this.loadHTML(this.currentHTML);
+                document.getElementById('status-msg').textContent = `已加载 (${files.length} 个文件)`;
+            }
+            
+            async processHTML(html) {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                const links = doc.querySelectorAll('link[rel="stylesheet"]');
+                for (const link of links) {
+                    const href = link.getAttribute('href');
+                    if (!href || this.isAbsolute(href)) continue;
+                    
+                    const file = this.findFile(href);
+                    if (file) {
+                        const css = await this.readText(file);
+                        const resolvedCSS = await this.processCSS(css, href);
+                        const style = doc.createElement('style');
+                        style.textContent = resolvedCSS;
+                        link.replaceWith(style);
+                    }
+                }
+                
+                const scripts = doc.querySelectorAll('script[src]');
+                for (const script of scripts) {
+                    const src = script.getAttribute('src');
+                    if (!src || this.isAbsolute(src)) continue;
+                    
+                    const file = this.findFile(src);
+                    if (file) {
+                        const js = await this.readText(file);
+                        const newScript = doc.createElement('script');
+                        newScript.textContent = js;
+                        if (script.type) newScript.type = script.type;
+                        if (script.defer) newScript.defer = true;
+                        if (script.async) newScript.async = true;
+                        script.replaceWith(newScript);
+                    }
+                }
+                
+                const imgs = doc.querySelectorAll('img[src]');
+                for (const img of imgs) {
+                    const src = img.getAttribute('src');
+                    if (!src || this.isAbsolute(src)) continue;
+                    
+                    const file = this.findFile(src);
+                    if (file) {
+                        img.src = await this.readDataURL(file);
+                    }
+                }
+                
+                const videos = doc.querySelectorAll('video[src], source[src]');
+                for (const video of videos) {
+                    const src = video.getAttribute('src');
+                    if (!src || this.isAbsolute(src)) continue;
+                    
+                    const file = this.findFile(src);
+                    if (file) {
+                        video.src = await this.readDataURL(file);
+                    }
+                }
+                
+                const audios = doc.querySelectorAll('audio[src]');
+                for (const audio of audios) {
+                    const src = audio.getAttribute('src');
+                    if (!src || this.isAbsolute(src)) continue;
+                    
+                    const file = this.findFile(src);
+                    if (file) {
+                        audio.src = await this.readDataURL(file);
+                    }
+                }
+                
+                const doctype = doc.doctype ? `<!DOCTYPE ${doc.doctype.name}>` : '<!DOCTYPE html>';
+                return doctype + doc.documentElement.outerHTML;
+            }
+            
+            async processCSS(css, cssPath) {
+                const urlRegex = /url\((['"]?)([^'")]+)\1\)/g;
+                let match;
+                const matches = [];
+                
+                while ((match = urlRegex.exec(css)) !== null) {
+                    matches.push({ full: match[0], path: match[2] });
+                }
+                
+                let result = css;
+                for (const m of matches) {
+                    if (this.isAbsolute(m.path)) continue;
+                    
+                    const resolved = this.resolvePath(cssPath, m.path);
+                    const file = this.findFile(resolved);
+                    if (file) {
+                        const dataUrl = await this.readDataURL(file);
+                        result = result.replace(m.full, `url(${dataUrl})`);
+                    }
+                }
+                
+                return result;
+            }
+            
+            resolvePath(base, relative) {
+                const baseParts = base.split('/').slice(0, -1);
+                const relParts = relative.split('/');
+                for (const part of relParts) {
+                    if (part === '..') baseParts.pop();
+                    else if (part !== '.') baseParts.push(part);
+                }
+                return baseParts.join('/');
+            }
+            
+            findFile(refPath) {
+                if (this.fileMap.has(refPath)) return this.fileMap.get(refPath);
+                for (const [path, file] of this.fileMap) {
+                    if (path.endsWith('/' + refPath) || path === refPath) {
+                        return file;
+                    }
+                }
+                return null;
+            }
+            
+            isAbsolute(url) {
+                return /^https?:\/\//.test(url) || /^\/\//.test(url) || /^data:/.test(url);
+            }
+            
+            readText(file) {
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.readAsText(file);
+                });
+            }
+            
+            readDataURL(file) {
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.readAsDataURL(file);
+                });
+            }
+            
+            loadHTML(html) {
+                this.previewFrame.srcdoc = html;
+            }
+            
+            exportHTML() {
+                if (!this.currentHTML) {
+                    alert('没有可导出的内容');
+                    return;
+                }
+                
+                const blob = new Blob([this.currentHTML], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'preview.html';
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                document.getElementById('status-msg').textContent = '已导出';
+            }
+        }
+        
+        const editor = new HTMLPreviewer();
+    </script>
+</body>
+</html>

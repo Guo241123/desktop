@@ -1,0 +1,26 @@
+# 编译输出
+dist/
+release/
+
+# 前端依赖
+node_modules/
+
+# 可执行文件
+*.exe
+
+# Python虚拟环境（所有层级自动忽略）
+.venv/
+venv/
+
+# IDE配置文件夹
+.idea/
+
+# Python缓存文件
+__pycache__/
+*.pyc
+*.pyo
+
+# 本地生成缓存数据目录
+chat_memory/
+search_img/
+vector_db/
