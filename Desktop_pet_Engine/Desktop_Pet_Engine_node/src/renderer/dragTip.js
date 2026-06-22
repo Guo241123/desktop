@@ -1,4 +1,4 @@
-import { setText } from "./api";
+import { setText } from "./api.js";
 
 export function createDragTip() {
   const wrap = document.createElement('div');

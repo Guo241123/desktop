@@ -1,4 +1,4 @@
-# 编译输出
+﻿# 编译输出
 dist/
 release/
 
@@ -20,7 +20,19 @@ __pycache__/
 *.pyc
 *.pyo
 
-# 本地生成缓存数据目录
-chat_memory/
-search_img/
-vector_db/
+# 本地生成缓存数据目录（统一存放在 data/ 下）
+data/
+
+# 环境变量（API Key等敏感信息）
+.env
+
+# Reasonix AI 开发环境配置
+.reasonix/
+
+# 构建产物
+*.spec
+Guo.zip
+*.log
+
+# Reasonix 配置文件
+reasonix.toml

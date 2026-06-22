@@ -3,7 +3,11 @@ const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
 
+// 单实例锁定
+const gotTheLock = app.requestSingleInstanceLock();
+
 let mainWindow;
+let settingsWindow = null;
 let tray = null;
 let backendProcess = null;
 let isDragging = false;
@@ -12,6 +16,31 @@ let startMouseY = 0;
 let startWinX = 0;
 let startWinY = 0;
 let willQuitApp = false;
+
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.show();
+      mainWindow.focus();
+    }
+  });
+
+  app.whenReady().then(createWindow);
+
+  app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') app.quit();
+  });
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    else mainWindow.show();
+  });
+  startBackend();
+
+  app.on('before-quit', () => { stopBackend(); willQuitApp = true; });
+}
 
 function createWindow() {
   const display = screen.getPrimaryDisplay();
@@ -49,7 +78,6 @@ function createWindow() {
     if (w !== 200 || h !== 300) mainWindow.setSize(200, 300);
   });
 
-  // ============== 【核心封装】统一的显示/隐藏切换函数 ==============
   const toggleWindow = () => {
     if (mainWindow.isVisible()) {
       mainWindow.hide();
@@ -83,23 +111,21 @@ function createWindow() {
       tray = new Tray(icon);
     }
 
-    // ============== 【菜单合并】只保留一个切换选项 ==============
     const menu = Menu.buildFromTemplate([
-      { label: '显示/隐藏', click: toggleWindow }, // 直接调用切换函数
+      { label: '显示/隐藏', click: toggleWindow },
+      { label: '设置', click: createSettingsWindow },
       { type: 'separator' },
       { label: '退出程序', click: () => { willQuitApp = true; app.quit(); } }
     ]);
     tray.setContextMenu(menu);
     tray.setToolTip('Guo');
     
-    // ============== 单击/双击 统一调用切换函数 ==============
     tray.on('click', toggleWindow);
     tray.on('double-click', toggleWindow);
   }
 
   createTray();
 
-  // 关闭/最小化隐藏托盘
   mainWindow.on('close', e => {
     if (!willQuitApp) {
       e.preventDefault();
@@ -116,7 +142,6 @@ function createWindow() {
   else mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
 }
 
-// 拖拽逻辑
 ipcMain.on('drag-start', (_, { x, y }) => {
   if (!mainWindow) return;
   isDragging = true;
@@ -135,32 +160,38 @@ ipcMain.on('drag-move', (_, { x, y }) => {
 });
 ipcMain.on('drag-end', () => isDragging = false);
 
-
-// ============== 璋冨悎 Python 鍚庣 ==============
 function startBackend() {
   const isDev = !app.isPackaged;
   
-  // Kill any old backend processes that might be holding port 5432
   const { execSync } = require('child_process');
   try { execSync('taskkill /f /im backend.exe 2>nul', { stdio: 'ignore', windowsHide: true }); } catch (e) {}
   try { execSync('taskkill /f /fi "PID ne 0" /im python.exe 2>nul', { stdio: 'ignore', windowsHide: true }); } catch (e) {}
 
-  const backendPath = isDev
-    ? path.join(__dirname, '..', '..', 'Desktop_Pet_Engine', '.venv', 'Scripts', 'python.exe')
+  // ── 动态路径：基于 main.js 所在目录（src/）向上定位 ──────────
+  const backendDir = path.resolve(__dirname, '..', '..', 'Desktop_Pet_Engine');
+
+  const usePyLauncher = isDev;
+  const backendExe = usePyLauncher
+    ? path.join(backendDir, '.venv', 'Scripts', 'python.exe')
     : path.join(process.resourcesPath, 'backend', 'backend.exe');
+  const backendArgs = usePyLauncher
+    ? ['-m', 'uvicorn', 'main:app', '--host', '127.0.0.1', '--port', '5432']
+    : [];
   const backendWorkDir = isDev
-    ? path.join(__dirname, '..', '..', 'Desktop_Pet_Engine')
+    ? backendDir
     : path.join(process.resourcesPath, 'backend');
   
+  // 使用 shell: true 确保路径正确解析
   if (isDev) {
-    backendProcess = spawn(backendPath, ['-m', 'uvicorn', 'main:app', '--host', '127.0.0.1', '--port', '5432'], {
+    backendProcess = spawn(backendExe, backendArgs, {
       cwd: backendWorkDir,
-      stdio: ['ignore', 'ignore', 'pipe']
+      stdio: ['ignore', 'pipe', 'pipe'],
+      shell: true
     });
   } else {
-    backendProcess = spawn(backendPath, [], {
+    backendProcess = spawn(backendExe, backendArgs, {
       cwd: backendWorkDir,
-      stdio: ['ignore', 'ignore', 'pipe'],
+      stdio: ['ignore', 'pipe', 'pipe'],
       env: { ...process.env, PYTHONIOENCODING: 'utf-8' }
     });
   }
@@ -168,6 +199,11 @@ function startBackend() {
   backendProcess.on('error', (err) => {
     console.error('[backend] failed:', err.message);
   });
+  if (backendProcess.stdout) {
+    backendProcess.stdout.on('data', (data) => {
+      console.log('[backend]', data.toString());
+    });
+  }
   if (backendProcess.stderr) {
     backendProcess.stderr.on('data', (data) => {
       console.error('[backend]', data.toString());
@@ -177,29 +213,28 @@ function startBackend() {
     console.error('[backend] exited with code', code);
   });
   
-  // Wait and retry if it fails
-  setTimeout(() => {
+  // ── 健康检查（首次等 4s，失败后重试 2 次，避免端口抢占） ────
+  const MAX_RETRIES = 2;
+  let retryCount = 0;
+
+  function checkHealth() {
     const http = require('http');
     const req = http.get('http://127.0.0.1:5432/', (res) => {
       console.log('[backend] health check OK');
     });
     req.on('error', () => {
-      console.error('[backend] health check FAILED, retrying spawn...');
-      if (backendProcess && !backendProcess.killed) {
-        backendProcess.kill();
-      }
-      // Try once more
-      backendProcess = spawn(backendPath, [], {
-        cwd: backendWorkDir,
-        stdio: ['ignore', 'ignore', 'pipe']
-      });
-      backendProcess.on('error', (err) => console.error('[backend] retry failed:', err.message));
-      if (backendProcess.stderr) {
-        backendProcess.stderr.on('data', (data) => console.error('[backend]', data.toString()));
+      retryCount++;
+      if (retryCount <= MAX_RETRIES) {
+        console.log(`[backend] health check failed (${retryCount}/${MAX_RETRIES}), retrying in 2s...`);
+        setTimeout(checkHealth, 2000);
+      } else {
+        console.error('[backend] health check failed after retries');
       }
     });
     req.end();
-  }, 2000);
+  }
+
+  setTimeout(checkHealth, 4000);
 }
 
 function stopBackend() {
@@ -208,15 +243,38 @@ function stopBackend() {
     backendProcess = null;
   }
 }
-app.whenReady().then(createWindow);
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
-});
-app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) createWindow();
-  else mainWindow.show();
-});
-startBackend();
+function createSettingsWindow() {
+  if (settingsWindow) {
+    settingsWindow.focus();
+    return;
+  }
 
-app.on('before-quit', () => { stopBackend(); willQuitApp = true; });
+  settingsWindow = new BrowserWindow({
+    width: 800,
+    height: 600,
+    resizable: false,
+    frame: true,
+    title: '设置',
+    icon: nativeImage.createEmpty(),
+    autoHideMenuBar: true,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      webSecurity: false
+    }
+  });
+
+  settingsWindow.setMenuBarVisibility(false);
+
+  const isDev = !app.isPackaged;
+  if (isDev) {
+    settingsWindow.loadURL('http://localhost:5173/settings.html');
+  } else {
+    settingsWindow.loadFile(path.join(__dirname, '../dist/settings.html'));
+  }
+
+  settingsWindow.on('closed', () => {
+    settingsWindow = null;
+  });
+}

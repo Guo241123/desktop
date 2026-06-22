@@ -1,14 +1,24 @@
 import sys, io
+import logging
+
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+
+# 统一日志配置
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
+    datefmt="%H:%M:%S",
+)
+
 from fastapi import FastAPI
 import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
-from controller.chat_controller import chat_router
+from gateway.router import register_routes
 
 app = FastAPI(title="芙芙助手")
 
-# 跨域配置（必须加，解决前端跨域报错）
+# 跨域配置
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -18,11 +28,11 @@ app.add_middleware(
 )
 
 # 注册路由
-app.include_router(chat_router)
+register_routes(app)
 
 @app.get("/")
 def index():
-    return {"status": "ok", "msg": "你好啊~ 同学！"}
+    return {"status": "ok", "msg": "你好啊~"}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=5432, reload=False)

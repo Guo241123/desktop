@@ -150,7 +150,7 @@ function animate() {
 }
 animate();
 
-// ============ 文件拖拽 (仅修改这�? ============
+// ============ 文件拖拽   ============
 window.addEventListener('dragover', (e) => e.preventDefault());
 
 window.addEventListener('drop', (e) => {
@@ -158,7 +158,7 @@ window.addEventListener('drop', (e) => {
   const files = e.dataTransfer.files;
   if (files.length === 0) return;
 
-  // 🔥 新增：把路径存到全局window（模型不崩溃�?
+  // 把路径存到全局window
   window.droppedFilePaths = [];
 
   for (let i = 0; i < files.length; i++) {
@@ -173,7 +173,7 @@ window.addEventListener('drop', (e) => {
   }
 });
 
-// ============ 初始化提�?============ 
+// ============ 初始化提示 ============
 window.addEventListener('load', async () => {
   try {
     const content = await getText();

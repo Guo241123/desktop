@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>设置</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .settings-section {
+      background: white;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .settings-section h3 {
+      font-size: 14px;
+      color: #333;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #eee;
+    }
+    .setting-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+    }
+    .setting-item label { font-size: 13px; color: #555; }
+    .setting-item input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+    .setting-item input[type="text"],
+    .setting-item input[type="number"] {
+      width: 200px;
+      padding: 6px 10px;
+      border-radius: 4px;
+      border: 1px solid #ddd;
+      font-size: 13px;
+    }
+    .setting-item input[type="range"] {
+      width: 150px;
+      cursor: pointer;
+    }
+    .range-value {
+      font-size: 12px;
+      color: #888;
+      min-width: 40px;
+      text-align: right;
+    }
+    .hint {
+      font-size: 11px;
+      color: #999;
+      margin-top: 4px;
+    }
+    .btn-save {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      background: #4a90d9;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    .btn-save:hover { background: #3a7bc8; }
+    .status-msg {
+      text-align: center;
+      font-size: 12px;
+      margin-top: 8px;
+      min-height: 18px;
+    }
+    .status-msg.success { color: #27ae60; }
+    .status-msg.error { color: #e74c3c; }
+  </style>
+</head>
+<body>
+
+  <!-- DeepSeek LLM 配置 -->
+  <div class="settings-section">
+    <h3>DeepSeek LLM 配置</h3>
+    <div class="setting-item">
+      <label>API Key</label>
+      <input type="text" id="deepseekApiKey" placeholder="sk-...">
+    </div>
+    <div class="setting-item">
+      <label>Base URL</label>
+      <input type="text" id="deepseekBaseUrl" placeholder="https://api.deepseek.com/v1">
+    </div>
+    <div class="setting-item">
+      <label>模型名称</label>
+      <input type="text" id="chatModel" placeholder="deepseek-v4-pro">
+    </div>
+    <div class="setting-item">
+      <label>温度 (Temperature)</label>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <input type="range" id="temperature" min="0" max="2" step="0.1" value="0.7">
+        <span class="range-value" id="tempValue">0.7</span>
+      </div>
+    </div>
+    <div class="hint">温度越高，回复越随机；温度越低，回复越确定</div>
+  </div>
+
+  <!-- SiliconFlow Embedding 配置 -->
+  <div class="settings-section">
+    <h3>SiliconFlow Embedding 配置</h3>
+    <div class="setting-item">
+      <label>API Key</label>
+      <input type="text" id="siliconApiKey" placeholder="sk-...">
+    </div>
+    <div class="setting-item">
+      <label>Base URL</label>
+      <input type="text" id="siliconBaseUrl" placeholder="https://api.siliconflow.cn/v1/">
+    </div>
+    <div class="setting-item">
+      <label>模型名称</label>
+      <input type="text" id="embeddingModel" placeholder="BAAI/bge-m3">
+    </div>
+  </div>
+
+  <!-- Tavily 搜索配置 -->
+  <div class="settings-section">
+    <h3>Tavily 搜索配置</h3>
+    <div class="setting-item">
+      <label>API Key</label>
+      <input type="text" id="tavilyKey" placeholder="tvly-...">
+    </div>
+  </div>
+
+  <!-- Mimo 语音服务配置 -->
+  <div class="settings-section">
+    <h3>Mimo 语音服务配置</h3>
+    <div class="setting-item">
+      <label>API Key</label>
+      <input type="text" id="mimoApiKey" placeholder="sk-...">
+    </div>
+    <div class="setting-item">
+      <label>Base URL</label>
+      <input type="text" id="mimoBaseUrl" placeholder="https://api.xiaomimimo.com/v1">
+    </div>
+    <div class="setting-item">
+      <label>ASR 模型</label>
+      <input type="text" id="modelAsr" placeholder="mimo-v2.5-asr">
+    </div>
+    <div class="setting-item">
+      <label>TTS 模型</label>
+      <input type="text" id="modelTts" placeholder="mimo-v2.5-tts-voiceclone">
+    </div>
+  </div>
+
+  <!-- 语音唤醒配置 -->
+  <div class="settings-section">
+    <h3>语音唤醒配置</h3>
+    <div class="setting-item">
+      <label>启用语音唤醒</label>
+      <input type="checkbox" id="voiceEnabled">
+    </div>
+    <div class="setting-item">
+      <label>唤醒词</label>
+      <input type="text" id="wakeWord" placeholder="你好">
+    </div>
+    <div class="setting-item">
+      <label>唤醒应答</label>
+      <input type="text" id="wakeReply" placeholder="我在">
+    </div>
+    <div class="setting-item">
+      <label>对话超时 (秒)</label>
+      <input type="number" id="conversationTimeout" min="10" max="300" value="60">
+    </div>
+    <div class="setting-item">
+      <label>音色样本路径</label>
+      <input type="text" id="voiceSamplePath" placeholder="C:\Users\xxx\Desktop\voice.mp3">
+    </div>
+  </div>
+
+  <!-- 普通设置 -->
+  <div class="settings-section">
+    <h3>普通设置</h3>
+    <div class="setting-item">
+      <label>语音音量</label>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <input type="range" id="volume" min="0" max="100" value="80">
+        <span class="range-value" id="volumeValue">80%</span>
+      </div>
+    </div>
+    <div class="setting-item">
+      <label>始终置顶</label>
+      <input type="checkbox" id="alwaysOnTop" checked>
+    </div>
+    <div class="setting-item">
+      <label>启动时自动显示</label>
+      <input type="checkbox" id="autoShow" checked>
+    </div>
+  </div>
+
+  <!-- 保存按钮 -->
+  <button class="btn-save" id="btnSave">保存到 .env</button>
+  <div class="status-msg" id="statusMsg"></div>
+
+  <script>
+    const elements = {
+      deepseekApiKey: document.getElementById('deepseekApiKey'),
+      deepseekBaseUrl: document.getElementById('deepseekBaseUrl'),
+      chatModel: document.getElementById('chatModel'),
+      temperature: document.getElementById('temperature'),
+      tempValue: document.getElementById('tempValue'),
+      siliconApiKey: document.getElementById('siliconApiKey'),
+      siliconBaseUrl: document.getElementById('siliconBaseUrl'),
+      embeddingModel: document.getElementById('embeddingModel'),
+      tavilyKey: document.getElementById('tavilyKey'),
+      mimoApiKey: document.getElementById('mimoApiKey'),
+      mimoBaseUrl: document.getElementById('mimoBaseUrl'),
+      modelAsr: document.getElementById('modelAsr'),
+      modelTts: document.getElementById('modelTts'),
+      voiceEnabled: document.getElementById('voiceEnabled'),
+      wakeWord: document.getElementById('wakeWord'),
+      wakeReply: document.getElementById('wakeReply'),
+      conversationTimeout: document.getElementById('conversationTimeout'),
+      voiceSamplePath: document.getElementById('voiceSamplePath'),
+      volume: document.getElementById('volume'),
+      volumeValue: document.getElementById('volumeValue'),
+      alwaysOnTop: document.getElementById('alwaysOnTop'),
+      autoShow: document.getElementById('autoShow')
+    };
+
+    const API_URL = 'http://localhost:5432/api';
+
+    // 加载设置
+    async function loadSettings() {
+      // 先从后端读取 .env
+      try {
+        const res = await fetch(API_URL + '/settings/load');
+        const data = await res.json();
+        if (data.success) {
+          const env = data.env;
+          elements.deepseekApiKey.value = env.DEEPSEEK_API_KEY || '';
+          elements.deepseekBaseUrl.value = env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com/v1';
+          elements.chatModel.value = env.CHAT_MODEL || 'deepseek-v4-pro';
+          elements.temperature.value = env.TEMPERATURE || 0.7;
+          elements.tempValue.textContent = elements.temperature.value;
+          elements.siliconApiKey.value = env.SILICONFLOW_API_KEY || '';
+          elements.siliconBaseUrl.value = env.SILICONFLOW_BASE_URL || 'https://api.siliconflow.cn/v1/';
+          elements.embeddingModel.value = env.EMBEDDING_MODEL || 'BAAI/bge-m3';
+          elements.tavilyKey.value = env.TAVILYWEB_KEY || '';
+          elements.mimoApiKey.value = env.MIMO_API_KEY || '';
+          elements.mimoBaseUrl.value = env.MIMO_BASE_URL || 'https://api.xiaomimimo.com/v1';
+          elements.modelAsr.value = env.MODEL_ASR || 'mimo-v2.5-asr';
+          elements.modelTts.value = env.MODEL_TTS || 'mimo-v2.5-tts-voiceclone';
+          elements.wakeWord.value = env.WAKE_WORD || '你好';
+          elements.wakeReply.value = env.WAKE_REPLY || '我在';
+          elements.conversationTimeout.value = env.CONVERSATION_TIMEOUT || 60;
+          elements.voiceSamplePath.value = env.VOICE_SAMPLE_PATH || '';
+        }
+      } catch (e) {
+        console.log('后端未启动，从本地缓存加载');
+      }
+
+      // 本地缓存兜底
+      const saved = localStorage.getItem('desktopPetSettings');
+      if (saved) {
+        const data = JSON.parse(saved);
+        if (!elements.deepseekApiKey.value) elements.deepseekApiKey.value = data.deepseekApiKey || '';
+        elements.voiceEnabled.checked = data.voiceEnabled || false;
+        elements.volume.value = data.volume || 80;
+        elements.volumeValue.textContent = elements.volume.value + '%';
+        elements.alwaysOnTop.checked = data.alwaysOnTop !== false;
+        elements.autoShow.checked = data.autoShow !== false;
+      }
+    }
+
+    // 保存到 .env
+    async function saveToEnv() {
+      const statusEl = document.getElementById('statusMsg');
+      statusEl.textContent = '保存中...';
+      statusEl.className = 'status-msg';
+
+      const envData = {
+        DEEPSEEK_API_KEY: elements.deepseekApiKey.value,
+        DEEPSEEK_BASE_URL: elements.deepseekBaseUrl.value,
+        CHAT_MODEL: elements.chatModel.value,
+        TEMPERATURE: elements.temperature.value,
+        SILICONFLOW_API_KEY: elements.siliconApiKey.value,
+        SILICONFLOW_BASE_URL: elements.siliconBaseUrl.value,
+        EMBEDDING_MODEL: elements.embeddingModel.value,
+        TAVILYWEB_KEY: elements.tavilyKey.value,
+        MIMO_API_KEY: elements.mimoApiKey.value,
+        MIMO_BASE_URL: elements.mimoBaseUrl.value,
+        MODEL_ASR: elements.modelAsr.value,
+        MODEL_TTS: elements.modelTts.value,
+        WAKE_WORD: elements.wakeWord.value,
+        WAKE_REPLY: elements.wakeReply.value,
+        CONVERSATION_TIMEOUT: elements.conversationTimeout.value,
+        VOICE_SAMPLE_PATH: elements.voiceSamplePath.value
+      };
+
+      const localData = {
+        voiceEnabled: elements.voiceEnabled.checked,
+        volume: parseInt(elements.volume.value),
+        alwaysOnTop: elements.alwaysOnTop.checked,
+        autoShow: elements.autoShow.checked
+      };
+
+      try {
+        const res = await fetch(API_URL + '/settings/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ env: envData, local: localData })
+        });
+        const result = await res.json();
+        if (result.success) {
+          statusEl.textContent = '保存成功！';
+          statusEl.className = 'status-msg success';
+        } else {
+          statusEl.textContent = '保存失败：' + (result.msg || '未知错误');
+          statusEl.className = 'status-msg error';
+        }
+      } catch (e) {
+        // 后端不可用时只存本地
+        localStorage.setItem('desktopPetSettings', JSON.stringify(localData));
+        statusEl.textContent = '后端未启动，已保存到本地';
+        statusEl.className = 'status-msg error';
+      }
+    }
+
+    // 事件绑定
+    elements.temperature.addEventListener('input', () => {
+      elements.tempValue.textContent = elements.temperature.value;
+    });
+
+    elements.volume.addEventListener('input', () => {
+      elements.volumeValue.textContent = elements.volume.value + '%';
+    });
+
+    document.getElementById('btnSave').addEventListener('click', saveToEnv);
+
+    loadSettings();
+  </script>
+</body>
+</html>

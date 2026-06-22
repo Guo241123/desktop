@@ -16,7 +16,7 @@ export async function getText() {
     return res.data;
   } catch (err) {
     console.error('请求失败', err);
-    return "请求失败哦~宝子";
+    return "请求失败哦~";
   }
 }
 

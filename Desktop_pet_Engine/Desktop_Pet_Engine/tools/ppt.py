@@ -1,5 +1,10 @@
 from langchain.tools import tool
-import fitz
+
+try:
+    import fitz
+except ImportError:
+    fitz = None
+
 from pptx import Presentation
 from pptx.util import Inches, Emu
 from playwright.sync_api import sync_playwright
