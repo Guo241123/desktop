@@ -4,19 +4,13 @@
 数据文件统一存放在项目根目录的 data/ 下。
 """
 
-import os
 from pathlib import Path
+from config.settings import DATA_DIR as _DATA_DIR
 
-# ── 项目根目录（Desktop_Pet_Engine/） ──────────────────────────
-ROOT_DIR = Path(__file__).resolve().parent.parent
+# 重新导出，方便 from config.paths import DATA_DIR
+DATA_DIR = _DATA_DIR
 
-# ── 项目外层根目录（Desktop_pet_Engine1/） ─────────────────────
-PROJECT_ROOT = ROOT_DIR.parent
-
-# ── 数据根目录 ─────────────────────────────────────────────────
-DATA_DIR = PROJECT_ROOT / "data"
-
-# ── 各数据子目录 ───────────────────────────────────────────────
+# ── 数据子目录 ─────────────────────────────────────────────────
 CHAT_MEMORY_DIR = DATA_DIR / "chat_memory"
 VECTOR_DB_DIR = DATA_DIR / "vector_db"
 SEARCH_IMG_DIR = DATA_DIR / "search_img"
@@ -26,7 +20,6 @@ STICKERS_DIR = DATA_DIR / "stickers"
 REMINDERS_FILE = DATA_DIR / "reminders.json"
 SANDBOX_DIR = DATA_DIR / "sandbox"
 USER_PROFILE_DIR = DATA_DIR / "user_profiles"
-
 
 
 def ensure_dirs():

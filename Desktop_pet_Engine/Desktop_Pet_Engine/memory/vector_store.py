@@ -3,10 +3,13 @@
 将对话记录转为向量存入 FAISS 索引，用于长期记忆检索。
 """
 
+import logging
 import os
 from langchain_community.vectorstores import FAISS
 from agent.model_config import get_embedding_model
 from config.paths import VECTOR_DB_DIR, ensure_dirs
+
+logger = logging.getLogger(__name__)
 
 ensure_dirs()
 
@@ -25,7 +28,7 @@ def get_session_vector(session_id: str = "default"):
 
         return store
     except Exception as e:
-        print(f"Vector store error: {e}")
+        logger.error("Vector store error: %s", e)
         return None
 
 
@@ -39,4 +42,4 @@ def save_chat_record(session_id: str, user_text: str, ai_text: str):
             vec_store.add_texts([content])
             vec_store.save_local(user_dir)
     except Exception as e:
-        print(f"Save chat record error: {e}")
+        logger.error("Save chat record error: %s", e)

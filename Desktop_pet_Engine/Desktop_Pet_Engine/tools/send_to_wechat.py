@@ -1,21 +1,21 @@
 """发送文件到微信的工具 — 支持图片/视频/文件"""
 
 import asyncio
-import base64
-import hashlib
-import io
 import logging
-import secrets
 from pathlib import Path
 from langchain.tools import tool
+
+from mi.media_uploader import (
+    compress_image, aes_encrypt, make_filekey,
+    build_upload_url, aes_key_to_b64,
+)
 
 logger = logging.getLogger(__name__)
 
 
 async def _send_file_async(bot_token: str, to_user_id: str, context_token: str, file_path: Path):
     """上传本地文件到 CDN 并通过微信发送（自动识别类型）"""
-    from mi.channels.wechat import ILinKAPI
-    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+    from mi.channels.wechat_api import ILinKAPI
 
     api = ILinKAPI(bot_token=bot_token)
     try:
@@ -30,50 +30,26 @@ async def _send_file_async(bot_token: str, to_user_id: str, context_token: str, 
 
         if ext in image_exts:
             media_type = 1  # IMAGE
-            # 压缩图片
-            from PIL import Image
-            MAX_SIZE = 300 * 1024
-            if len(raw_data) > MAX_SIZE:
-                img = Image.open(file_path)
-                if img.mode in ("RGBA", "P"):
-                    img = img.convert("RGB")
-                if max(img.width, img.height) > 800:
-                    ratio = 800 / max(img.width, img.height)
-                    img = img.resize((int(img.width * ratio), int(img.height * ratio)), Image.LANCZOS)
-                buf = io.BytesIO()
-                img.save(buf, format="JPEG", quality=70, optimize=True)
-                raw_data = buf.getvalue()
-                logger.info("图片压缩: %s -> %dKB", file_path.name, len(raw_data) // 1024)
+            raw_data = compress_image(raw_data)
+            logger.info("图片压缩: %s -> %dKB", file_path.name, len(raw_data) // 1024)
         elif ext in video_exts:
             media_type = 2  # VIDEO
         else:
             media_type = 3  # FILE
 
-        raw_size = len(raw_data)
-        raw_md5 = hashlib.md5(raw_data).hexdigest()
-        aes_key = secrets.token_bytes(16)
-        pad_len = 16 - (raw_size % 16)
-        padded = raw_data + bytes([pad_len] * pad_len)
-        encryptor = Cipher(algorithms.AES(aes_key), modes.ECB()).encryptor()
-        ciphertext = encryptor.update(padded) + encryptor.finalize()
-
-        filekey = f"uu-{secrets.token_hex(8)}"
+        ciphertext, aes_key, raw_md5 = aes_encrypt(raw_data)
+        filekey = make_filekey()
 
         upload_resp = await api.get_upload_url(
             filekey=filekey,
             to_user_id=to_user_id,
             file_size=len(ciphertext),
             aes_key=aes_key.hex(),
-            raw_size=raw_size,
+            raw_size=len(raw_data),
             raw_md5=raw_md5,
             media_type=media_type,
         )
-        upload_url = upload_resp.get("upload_full_url", "")
-        if not upload_url:
-            upload_param = upload_resp.get("upload_param", "")
-            if upload_param:
-                from urllib.parse import quote
-                upload_url = f"https://novac2c.cdn.weixin.qq.com/c2c/upload?encrypted_query_param={quote(upload_param)}&filekey={quote(filekey)}"
+        upload_url = build_upload_url(upload_resp, filekey)
         if not upload_url:
             raise RuntimeError(f"获取上传 URL 失败: {upload_resp}")
 
@@ -81,7 +57,7 @@ async def _send_file_async(bot_token: str, to_user_id: str, context_token: str, 
         if not download_param:
             raise RuntimeError("CDN 上传失败，无 download_param")
 
-        aes_key_b64 = base64.b64encode(aes_key.hex().encode()).decode()
+        aes_key_b64 = aes_key_to_b64(aes_key)
 
         if media_type == 1:  # IMAGE
             item = {
@@ -97,7 +73,7 @@ async def _send_file_async(bot_token: str, to_user_id: str, context_token: str, 
             item = {
                 "media": {"encrypt_query_param": download_param, "aes_key": aes_key_b64, "encrypt_type": 1},
                 "file_name": file_path.name,
-                "len": str(raw_size),
+                "len": str(len(raw_data)),
             }
 
         await api.send_media(
@@ -133,10 +109,8 @@ def send_file_to_wechat(file_path: str):
     to_user_id = channel._last_user_id
     context_token = channel._last_context_token
 
-    new_loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(new_loop)
     try:
-        new_loop.run_until_complete(_send_file_async(
+        asyncio.run(_send_file_async(
             bot_token=bot_token, to_user_id=to_user_id,
             context_token=context_token, file_path=path,
         ))
@@ -144,5 +118,3 @@ def send_file_to_wechat(file_path: str):
     except Exception as e:
         logger.exception("发送文件到微信失败")
         return f"发送文件失败: {e}"
-    finally:
-        new_loop.close()

@@ -1,7 +1,10 @@
 import os
 import shutil
 import platform
+import logging
 from langchain.tools import tool
+
+logger = logging.getLogger(__name__)
 
 
 # 1. 创建文件夹
@@ -12,10 +15,11 @@ def make_dir(dir_path):
     :param dir_path: 文件夹完整路径
     """
     try:
+        dir_path = os.path.expanduser(dir_path)
         os.makedirs(dir_path, exist_ok=True)
-        print(f"目录创建成功：{dir_path}")
+        logger.info(f"目录创建成功: {dir_path}")
     except Exception as e:
-        print(f"创建失败：{e}")
+        logger.error(f"创建目录失败: {e}")
 
 
 # 2. 创建空文件
@@ -26,11 +30,12 @@ def make_file(file_path = "~/Desktop"):
     :param file_path: 文件完整路径
     """
     try:
+        file_path = os.path.expanduser(file_path)
         with open(file_path, 'w', encoding='utf-8'):
             pass
-        print(f"文件创建成功：{file_path}")
+        logger.info(f"文件创建成功: {file_path}")
     except Exception as e:
-        print(f"创建失败：{e}")
+        logger.error(f"创建文件失败: {e}")
 
 
 # 3. 读取文本文件
@@ -42,14 +47,13 @@ def read_file(file_path):
     :return: 文件字符串内容
     """
     try:
+        file_path = os.path.expanduser(file_path)
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
-        print(f"读取成功")
-        print("文件内容：")
-        print(content)
+        logger.info(f"读取成功: {file_path}")
         return content
     except Exception as e:
-        print(f"读取失败：{e}")
+        logger.error(f"读取失败: {e}")
         return None
 
 
@@ -61,10 +65,11 @@ def del_file(file_path):
     :param file_path: 文件路径
     """
     try:
+        file_path = os.path.expanduser(file_path)
         os.remove(file_path)
-        print(f"文件已删除：{file_path}")
+        logger.info(f"文件已删除: {file_path}")
     except Exception as e:
-        print(f"删除失败：{e}")
+        logger.error(f"删除文件失败: {e}")
 
 
 # 5. 递归删除文件夹
@@ -75,10 +80,11 @@ def del_dir(dir_path):
     :param dir_path: 目录路径
     """
     try:
+        dir_path = os.path.expanduser(dir_path)
         shutil.rmtree(dir_path)
-        print(f"文件夹已删除：{dir_path}")
+        logger.info(f"文件夹已删除: {dir_path}")
     except Exception as e:
-        print(f"删除失败：{e}")
+        logger.error(f"删除目录失败: {e}")
 
 
 # 6. 扫描目录所有文件名
@@ -90,13 +96,14 @@ def scan_dir(dir_path):
     :return: 名称列表
     """
     try:
+        dir_path = os.path.expanduser(dir_path)
         name_list = os.listdir(dir_path)
-        print(f"扫描完成，共{len(name_list)}项")
+        logger.info(f"扫描完成，共{len(name_list)}项")
         for name in name_list:
-            print(name)
+            logger.info(name)
         return name_list
     except Exception as e:
-        print(f"扫描失败：{e}")
+        logger.error(f"扫描失败: {e}")
         return []
 
 
@@ -109,7 +116,8 @@ def move_item(source, target_dir):
     :param target_dir: 目标存放目录
     """
     try:
-        # 🔥 修复核心错误：os.basename → os.path.basename
+        source = os.path.expanduser(source)
+        target_dir = os.path.expanduser(target_dir)
         base_name = os.path.basename(source)
         # 拼接目标完整路径
         dst = os.path.join(target_dir, base_name)
@@ -120,9 +128,9 @@ def move_item(source, target_dir):
 
         # 执行移动
         shutil.move(source, dst)
-        print(f"移动完成：{source} → {dst}")
+        logger.info(f"移动完成: {source} → {dst}")
     except Exception as e:
-        print(f"移动失败：{e}")
+        logger.error(f"移动失败: {e}")
 # 8. 复制单个文件
 @tool
 def copy_file(source_path, target_dir):
@@ -132,12 +140,14 @@ def copy_file(source_path, target_dir):
     :param target_dir: 目标文件夹
     """
     try:
+        source_path = os.path.expanduser(source_path)
+        target_dir = os.path.expanduser(target_dir)
         fname = os.path.basename(source_path)
         dst = os.path.join(target_dir, fname)
         shutil.copy2(source_path, dst)
-        print(f"文件复制：{source_path} → {dst}")
+        logger.info(f"文件复制: {source_path} → {dst}")
     except Exception as e:
-        print(f"复制失败：{e}")
+        logger.error(f"复制失败: {e}")
 
 
 # 9. 完整复制文件夹
@@ -149,12 +159,14 @@ def copy_dir(source_path, target_dir):
     :param target_dir: 目标父目录
     """
     try:
+        source_path = os.path.expanduser(source_path)
+        target_dir = os.path.expanduser(target_dir)
         dirname = os.path.basename(source_path)
         dst = os.path.join(target_dir, dirname)
         shutil.copytree(source_path, dst)
-        print(f"目录复制：{source_path} → {dst}")
+        logger.info(f"目录复制: {source_path} → {dst}")
     except Exception as e:
-        print(f"复制失败：{e}")
+        logger.error(f"复制失败: {e}")
 
 
 # 10. 文件/文件夹重命名
@@ -166,12 +178,13 @@ def rename_item(old_path, new_name):
     :param new_name: 新名称(带后缀)
     """
     try:
+        old_path = os.path.expanduser(old_path)
         parent = os.path.dirname(old_path)
         new_full = os.path.join(parent, new_name)
         os.rename(old_path, new_full)
-        print(f"重命名：{old_path} → {new_full}")
+        logger.info(f"重命名: {old_path} → {new_full}")
     except Exception as e:
-        print(f"重命名失败：{e}")
+        logger.error(f"重命名失败: {e}")
 
 
 # 11. 批量修改文件后缀
@@ -184,6 +197,7 @@ def batch_change_suffix(folder, old_suf, new_suf):
     :param new_suf: 新后缀 .md
     """
     try:
+        folder = os.path.expanduser(folder)
         cnt = 0
         for name in os.listdir(folder):
             full = os.path.join(folder, name)
@@ -192,9 +206,9 @@ def batch_change_suffix(folder, old_suf, new_suf):
                 new_full = os.path.join(folder, new_name)
                 os.rename(full, new_full)
                 cnt += 1
-        print(f"批量修改完成，共改{cnt}个文件")
+        logger.info(f"批量修改完成，共改{cnt}个文件")
     except Exception as e:
-        print(f"批量改名失败：{e}")
+        logger.error(f"批量改名失败: {e}")
 
  # 12. 向文件写入内容（覆盖写入）
 @tool
@@ -205,11 +219,12 @@ def write_file(file_path, content):
         :param content: 要写入的内容
     """
     try:
+        file_path = os.path.expanduser(file_path)
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(content)
-        print(f"文件写入成功：{file_path}")
+        logger.info(f"文件写入成功: {file_path}")
     except Exception as e:
-        print(f"写入失败：{e}")
+        logger.error(f"写入失败: {e}")
 
 
 

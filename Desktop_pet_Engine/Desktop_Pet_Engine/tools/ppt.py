@@ -12,7 +12,7 @@ from pathlib import Path
 import re
 import shutil
 import json
-from tools.style import style
+from tools.style import style as _get_style_css
 
 # ===================== 基础目录：桌面 =====================
 BASE_DIR = Path.home() / "Desktop"
@@ -320,6 +320,8 @@ def create_ppt_html(ppt_content: str, folder_name: str = "") -> str:
 
 
 
+    _css_styles = _get_style_css()
+
     html_prompt = f"""
             根据以下PPT分页内容，生成可直接转PDF的专业HTML代码。
             
@@ -343,7 +345,7 @@ def create_ppt_html(ppt_content: str, folder_name: str = "") -> str:
             5. 内容中的 <div class="img-box"> 和 <img class="slide-img"> 必须原样保留，不要修改
             6. 只输出完整HTML，不要任何说明或markdown标记
             7. 不省略任何页面
-            8.{style()}
+            8.{_css_styles}
             
 
 """

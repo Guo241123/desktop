@@ -1,7 +1,10 @@
 """Memory层 - 聊天记忆管理（JSON文件存储）"""
 
 import json
+import logging
 from config.paths import CHAT_MEMORY_DIR, ensure_dirs
+
+logger = logging.getLogger(__name__)
 
 ensure_dirs()
 
@@ -30,7 +33,7 @@ def save_memory(session_id: str, chat_history: list):
         with open(file, "w", encoding="utf-8") as f:
             json.dump(chat_history, f, ensure_ascii=False, indent=2)
     except Exception as e:
-        print(f"Save memory error: {e}")
+        logger.error("Save memory error: %s", e)
 
 
 def clear_memory(session_id: str):

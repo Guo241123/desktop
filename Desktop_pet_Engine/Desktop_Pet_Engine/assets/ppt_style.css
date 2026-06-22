@@ -1,0 +1,485 @@
+
+        【HTML模板 - 必须使用此CSS】
+            <!DOCTYPE html>
+            <html>
+            <head>
+            <meta charset="utf-8">
+            <style>
+            :root {
+                --primary: #0052D9;
+                --primary-dark: #003d99;
+                --primary-light: #e6f0ff;
+                --accent: #00b4ff;
+                --bg: #f5f7fa;
+                --text-main: #1a1a1a;
+                --text-sub: #555;
+                --text-light: #888;
+                --border: #e8ecf1;
+                --shadow: rgba(0,82,217,0.12);
+                --gradient-start: #003d99;
+                --gradient-mid: #0052D9;
+                --gradient-end: #0066ff;
+                --card-bg: #ffffff;
+            }
+            
+            .theme-dark {
+                --primary: #00d4aa; --primary-dark: #00a884; --primary-light: #0d1f2d;
+                --accent: #00f0ff; --bg: #0a0e17; --text-main: #e0e6ed;
+                --text-sub: #94a3b8; --text-light: #64748b; --border: #1e293b;
+                --shadow: rgba(0,212,170,0.15);
+                --gradient-start: #0a0e17; --gradient-mid: #1e293b; --gradient-end: #0f172a;
+                --card-bg: #1e293b;
+            }
+            .theme-orange {
+                --primary: #ff6b35; --primary-dark: #e55a2b; --primary-light: #fff0eb;
+                --accent: #ffaa5c; --bg: #faf8f5; --text-main: #1a1a1a;
+                --text-sub: #555; --text-light: #888; --border: #f0e6e0;
+                --shadow: rgba(255,107,53,0.12);
+                --gradient-start: #e55a2b; --gradient-mid: #ff6b35; --gradient-end: #ffaa5c;
+                --card-bg: #ffffff;
+            }
+            .theme-green {
+                --primary: #10b981; --primary-dark: #059669; --primary-light: #ecfdf5;
+                --accent: #34d399; --bg: #f5faf7; --text-main: #1a1a1a;
+                --text-sub: #555; --text-light: #888; --border: #e0ebe4;
+                --shadow: rgba(16,185,129,0.12);
+                --gradient-start: #059669; --gradient-mid: #10b981; --gradient-end: #34d399;
+                --card-bg: #ffffff;
+            }
+            .theme-red {
+                --primary: #dc2626; --primary-dark: #b91c1c; --primary-light: #fef2f2;
+                --accent: #f59e0b; --bg: #faf5f5; --text-main: #1a1a1a;
+                --text-sub: #555; --text-light: #888; --border: #f0e0e0;
+                --shadow: rgba(220,38,38,0.12);
+                --gradient-start: #b91c1c; --gradient-mid: #dc2626; --gradient-end: #ef4444;
+                --card-bg: #ffffff;
+            }
+            .theme-yellow {
+                --primary: #f59e0b; --primary-dark: #d97706; --primary-light: #fffbeb;
+                --accent: #fbbf24; --bg: #faf8f5; --text-main: #1a1a1a;
+                --text-sub: #555; --text-light: #888; --border: #f0ebe0;
+                --shadow: rgba(245,158,11,0.12);
+                --gradient-start: #d97706; --gradient-mid: #f59e0b; --gradient-end: #fbbf24;
+                --card-bg: #ffffff;
+            }
+            
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body {
+                font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", sans-serif;
+                background: var(--bg); margin: 0; padding: 0;
+            }
+            .slide {
+                width: 1920px; height: 1080px; background: #ffffff;
+                page-break-after: always; break-after: page;
+                overflow: hidden; position: relative;
+            }
+            
+            /* 封面 */
+            .slide.cover {
+                background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-mid) 50%, var(--gradient-end) 100%);
+                color: white; display: flex; flex-direction: column;
+                justify-content: center; align-items: center; text-align: center;
+                padding: 0 200px;
+            }
+            .slide.cover h1 {
+                font-size: 88px; font-weight: 900; letter-spacing: 8px;
+                margin-bottom: 40px; text-shadow: 0 6px 30px rgba(0,0,0,0.25);
+                line-height: 1.2;
+            }
+            .slide.cover .subtitle {
+                font-size: 36px; font-weight: 300; letter-spacing: 4px;
+                color: rgba(255,255,255,0.9); line-height: 1.5;
+            }
+            .cover-line {
+                width: 100px; height: 5px; background: rgba(255,255,255,0.5);
+                margin: 50px auto; border-radius: 3px;
+            }
+            .cover-info {
+                font-size: 24px; color: rgba(255,255,255,0.7);
+                margin-top: 80px; letter-spacing: 2px;
+            }
+            
+            /* 目录 */
+            .slide.toc {
+                padding: 80px 120px; display: flex; flex-direction: column;
+            }
+            .slide.toc h2 {
+                font-size: 52px; color: var(--text-main); font-weight: 800;
+                margin-bottom: 60px; padding-left: 20px;
+                border-left: 8px solid var(--primary); letter-spacing: 4px;
+            }
+            .toc-card-grid {
+                display: grid; grid-template-columns: repeat(2, 1fr);
+                gap: 30px 50px;
+            }
+            .toc-card {
+                display: flex; align-items: center; gap: 25px;
+                padding: 30px 35px; background: var(--card-bg);
+                border-radius: 16px; border: 1px solid var(--border);
+                box-shadow: 0 4px 20px var(--shadow);
+                position: relative; overflow: hidden;
+            }
+            .toc-card::before {
+                content: ""; position: absolute; left: 0; top: 0;
+                width: 6px; height: 100%; background: var(--primary);
+            }
+            .toc-card-num {
+                width: 52px; height: 52px; min-width: 52px;
+                background: var(--primary); color: white; border-radius: 50%;
+                display: flex; align-items: center; justify-content: center;
+                font-size: 24px; font-weight: 800;
+                box-shadow: 0 4px 12px var(--shadow);
+            }
+            .toc-card-text {
+                font-size: 30px; color: var(--text-main); font-weight: 600;
+                letter-spacing: 1px;
+            }
+            
+            /* 过渡页 */
+            .slide.transition {
+                background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-mid) 100%);
+                color: white; display: flex; flex-direction: column;
+                justify-content: center; align-items: center; text-align: center;
+                padding: 0 200px;
+            }
+            .slide.transition .trans-num {
+                font-size: 200px; font-weight: 900; opacity: 0.12;
+                position: absolute; top: 50%; left: 50%;
+                transform: translate(-50%, -50%); letter-spacing: 10px;
+            }
+            .slide.transition h2 {
+                font-size: 68px; font-weight: 800; letter-spacing: 6px;
+                margin-bottom: 25px; position: relative; z-index: 1;
+            }
+            .slide.transition p {
+                font-size: 30px; font-weight: 300;
+                color: rgba(255,255,255,0.85); letter-spacing: 2px;
+                position: relative; z-index: 1;
+            }
+            
+            /* 正文列表 */
+            .slide.text {
+                padding: 80px 120px 80px 140px; display: flex; flex-direction: column;
+            }
+            .slide.text::before {
+                content: ""; position: absolute; top: 0; left: 0;
+                width: 8px; height: 100%;
+                background: linear-gradient(180deg, var(--primary) 0%, var(--primary-dark) 100%);
+            }
+            .page-header {
+                margin-bottom: 50px; padding-bottom: 20px;
+                border-bottom: 2px solid var(--border); position: relative;
+            }
+            .page-header::after {
+                content: ""; position: absolute; bottom: -2px; left: 0;
+                width: 180px; height: 3px; background: var(--primary); border-radius: 2px;
+            }
+            .slide.text h2 {
+                font-size: 48px; color: var(--text-main); font-weight: 800;
+                letter-spacing: 3px; line-height: 1.3;
+            }
+            .slide.text ul {
+                list-style: none; display: flex; flex-direction: column;
+                gap: 24px; margin-top: 10px;
+            }
+            .slide.text li {
+                font-size: 30px; color: var(--text-sub); line-height: 1.6;
+                padding: 20px 30px 20px 60px; position: relative;
+                background: var(--primary-light); border-radius: 12px;
+                border-left: 4px solid var(--primary);
+            }
+            .slide.text li::before {
+                content: ""; position: absolute; left: 25px; top: 28px;
+                width: 10px; height: 10px; background: var(--primary);
+                border-radius: 50%;
+            }
+            .slide.text li strong {
+                color: var(--primary); font-weight: 700;
+            }
+            
+            /* 时间轴 */
+            .slide.timeline {
+                padding: 80px 120px; display: flex; flex-direction: column;
+            }
+            .slide.timeline h2 {
+                font-size: 48px; color: var(--text-main); font-weight: 800;
+                margin-bottom: 50px; padding-left: 20px;
+                border-left: 6px solid var(--primary);
+            }
+            .timeline-wrap {
+                display: flex; flex-direction: column; gap: 0;
+                position: relative; padding-left: 60px;
+            }
+            .timeline-wrap::before {
+                content: ""; position: absolute; left: 20px; top: 0;
+                width: 3px; height: 100%; background: var(--border);
+            }
+            .timeline-item {
+                display: flex; gap: 40px; padding: 25px 0;
+                position: relative;
+            }
+            .timeline-item::before {
+                content: ""; position: absolute; left: -46px; top: 35px;
+                width: 18px; height: 18px; background: var(--primary);
+                border-radius: 50%; border: 4px solid var(--card-bg);
+                box-shadow: 0 0 0 3px var(--primary);
+                z-index: 2;
+            }
+            .timeline-year {
+                font-size: 28px; font-weight: 800; color: var(--primary);
+                min-width: 120px; text-align: right; padding-top: 5px;
+            }
+            .timeline-content {
+                flex: 1; background: var(--card-bg);
+                padding: 25px 30px; border-radius: 14px;
+                border: 1px solid var(--border);
+                box-shadow: 0 4px 15px var(--shadow);
+                font-size: 28px; color: var(--text-sub); line-height: 1.6;
+            }
+            .timeline-content strong {
+                color: var(--text-main); font-weight: 700; font-size: 30px;
+                display: block; margin-bottom: 8px;
+            }
+            
+            /* 卡片网格 */
+            .slide.card-grid {
+                padding: 80px 120px; display: flex; flex-direction: column;
+            }
+            .slide.card-grid h2 {
+                font-size: 48px; color: var(--text-main); font-weight: 800;
+                margin-bottom: 50px; padding-left: 20px;
+                border-left: 6px solid var(--primary);
+            }
+            .card-grid-wrap {
+                display: grid; grid-template-columns: repeat(2, 1fr);
+                gap: 35px;
+            }
+            .card-grid-wrap.col3 {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            .card-item {
+                background: var(--card-bg); border-radius: 20px;
+                padding: 40px; border: 1px solid var(--border);
+                box-shadow: 0 6px 24px var(--shadow);
+                display: flex; flex-direction: column; gap: 20px;
+            }
+            .card-icon {
+                width: 64px; height: 64px; background: var(--primary-light);
+                border-radius: 16px; display: flex; align-items: center;
+                justify-content: center; font-size: 32px; color: var(--primary);
+                font-weight: 700;
+            }
+            .card-item h3 {
+                font-size: 32px; color: var(--text-main); font-weight: 700;
+            }
+            .card-item p {
+                font-size: 26px; color: var(--text-sub); line-height: 1.6;
+            }
+            
+            /* 双列对比 */
+            .slide.two-col {
+                padding: 80px 120px; display: flex; flex-direction: column;
+            }
+            .slide.two-col h2 {
+                font-size: 48px; color: var(--text-main); font-weight: 800;
+                margin-bottom: 50px; padding-left: 20px;
+                border-left: 6px solid var(--primary);
+            }
+            .vs-wrapper {
+                display: flex; gap: 50px; flex: 1; align-items: stretch;
+            }
+            .vs-box {
+                flex: 1; background: var(--card-bg); border-radius: 20px;
+                padding: 50px; border: 2px solid var(--border);
+                box-shadow: 0 8px 32px var(--shadow);
+                display: flex; flex-direction: column;
+            }
+            .vs-box.left { border-top: 6px solid var(--text-light); }
+            .vs-box.right { border-top: 6px solid var(--primary); }
+            .vs-box h3 {
+                font-size: 36px; font-weight: 700; margin-bottom: 35px;
+                padding-bottom: 20px; border-bottom: 2px solid var(--border);
+            }
+            .vs-box.left h3 { color: var(--text-light); }
+            .vs-box.right h3 { color: var(--primary); }
+            .vs-box ul {
+                list-style: none; display: flex; flex-direction: column; gap: 22px;
+            }
+            .vs-box li {
+                font-size: 28px; color: var(--text-sub); line-height: 1.6;
+                padding-left: 35px; position: relative;
+            }
+            .vs-box li::before {
+                content: ""; position: absolute; left: 0; top: 12px;
+                width: 10px; height: 10px; border-radius: 2px;
+            }
+            .vs-box.left li::before { background: var(--text-light); }
+            .vs-box.right li::before { background: var(--primary); }
+            .vs-divider {
+                display: flex; align-items: center; justify-content: center;
+                font-size: 40px; font-weight: 900; color: var(--border);
+                padding: 0 20px;
+            }
+            
+            /* 图文页 */
+            .slide.split {
+                padding: 80px 120px; display: flex; gap: 80px; align-items: center;
+            }
+            .split-left { flex: 1.1; display: flex; flex-direction: column; }
+            .split-right { flex: 1; display: flex; align-items: center; justify-content: center; }
+            .split-left h2 {
+                font-size: 48px; color: var(--text-main); font-weight: 800;
+                margin-bottom: 40px; padding-bottom: 20px;
+                border-bottom: 3px solid var(--primary); display: inline-block;
+            }
+            .split-left ul {
+                list-style: none; display: flex; flex-direction: column; gap: 24px;
+            }
+            .split-left li {
+                font-size: 30px; color: var(--text-sub); line-height: 1.6;
+                padding: 18px 25px; background: var(--primary-light);
+                border-radius: 12px; border-left: 4px solid var(--primary);
+            }
+            
+            /* ★ 图片容器（真实图片） */
+            .img-box {
+                width: 100%;
+                height: 620px;
+                border-radius: 24px;
+                overflow: hidden;
+                box-shadow: 0 12px 40px var(--shadow);
+                background: var(--primary-light);
+            }
+            .slide-img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                object-position: center;
+                display: block;
+            }
+            
+            /* 图片占位（未下载时） */
+            .img-placeholder {
+                width: 100%;
+                height: 620px;
+                background: var(--primary-light);
+                border: 2px dashed var(--primary);
+                border-radius: 24px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                color: var(--primary);
+                font-size: 24px;
+                gap: 15px;
+            }
+            .img-placeholder .ph-icon {
+                font-size: 64px;
+                opacity: 0.4;
+            }
+            
+            /* 数据页 */
+            .slide.data {
+                padding: 80px 120px; display: flex; flex-direction: column;
+            }
+            .slide.data h2 {
+                font-size: 48px; color: var(--text-main); font-weight: 800;
+                margin-bottom: 50px; padding-left: 20px;
+                border-left: 6px solid var(--primary);
+            }
+            .data-row {
+                display: grid; grid-template-columns: repeat(4, 1fr);
+                gap: 35px; margin-bottom: 50px;
+            }
+            .data-row.col3 { grid-template-columns: repeat(3, 1fr); }
+            .data-block {
+                background: var(--card-bg); border-radius: 20px;
+                padding: 45px 30px; text-align: center;
+                border: 1px solid var(--border);
+                box-shadow: 0 8px 30px var(--shadow);
+                position: relative; overflow: hidden;
+            }
+            .data-block::before {
+                content: ""; position: absolute; top: 0; left: 0; right: 0;
+                height: 5px; background: linear-gradient(90deg, var(--primary), var(--accent));
+            }
+            .data-block .num {
+                font-size: 64px; font-weight: 900; color: var(--primary);
+                margin-bottom: 15px; letter-spacing: 1px;
+            }
+            .data-block .label {
+                font-size: 26px; color: var(--text-sub); font-weight: 500;
+            }
+            .chart-box {
+                flex: 1; background: var(--primary-light); border-radius: 20px;
+                border: 2px dashed var(--primary); display: flex;
+                align-items: center; justify-content: center;
+                font-size: 28px; color: var(--primary); gap: 15px;
+            }
+            
+            /* 结尾 */
+            .slide.ending {
+                background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-mid) 50%, var(--gradient-end) 100%);
+                color: white; display: flex; flex-direction: column;
+                justify-content: center; align-items: center; text-align: center;
+                padding: 0 200px;
+            }
+            .slide.ending h2 {
+                font-size: 80px; font-weight: 900; letter-spacing: 8px;
+                margin-bottom: 30px; text-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            }
+            .ending-line {
+                width: 80px; height: 4px; background: rgba(255,255,255,0.5);
+                margin: 40px auto; border-radius: 2px;
+            }
+            .slide.ending p {
+                font-size: 34px; color: rgba(255,255,255,0.85);
+                font-weight: 300; letter-spacing: 2px;
+            }
+            
+            /* 页码 */
+            .page-num {
+                position: absolute; bottom: 40px; right: 60px;
+                font-size: 20px; color: var(--text-light);
+                font-weight: 500; letter-spacing: 1px;
+            }
+            
+            /* 暗色适配 */
+            .theme-dark .slide.text, .theme-dark .slide.timeline,
+            .theme-dark .slide.card-grid, .theme-dark .slide.two-col,
+            .theme-dark .slide.split, .theme-dark .slide.data {
+                background: #0f172a;
+            }
+            .theme-dark .slide.text li, .theme-dark .slide.text h2,
+            .theme-dark .slide.timeline h2, .theme-dark .card-item h3,
+            .theme-dark .slide.card-grid h2, .theme-dark .slide.two-col h2,
+            .theme-dark .slide.split h2, .theme-dark .slide.data h2,
+            .theme-dark .timeline-content strong {
+                color: #e2e8f0;
+            }
+            .theme-dark .card-item p, .theme-dark .vs-box li,
+            .theme-dark .timeline-content, .theme-dark .split-left li,
+            .theme-dark .data-block .label {
+                color: #94a3b8;
+            }
+            .theme-dark .vs-box, .theme-dark .card-item,
+            .theme-dark .timeline-content, .theme-dark .data-block,
+            .theme-dark .split-left li, .theme-dark .slide.text li {
+                background: #1e293b; border-color: #334155;
+            }
+            .theme-dark .toc-card { background: #1e293b; border-color: #334155; }
+            .theme-dark .page-header { border-color: #334155; }
+            .theme-dark .vs-box h3 { border-color: #334155; }
+            .theme-dark .card-icon { background: #0f172a; }
+            .theme-dark .img-box { background: #1e293b; }
+            .theme-dark .chart-box {
+                background: #1e293b; border-color: #334155; color: #00d4aa;
+            }
+            .theme-dark .timeline-wrap::before { background: #334155; }
+            .theme-dark .timeline-item::before { border-color: #0f172a; }
+            </style>
+            </head>
+            <body>
+            </body>
+            </html>
+            
