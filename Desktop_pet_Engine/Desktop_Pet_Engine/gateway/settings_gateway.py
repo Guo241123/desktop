@@ -1,13 +1,12 @@
-"""Gateway层 — 设置入口
-
-提供 /api/settings/load（读取 .env）和 /api/settings/save（写入 .env）接口。
-"""
-
+# Gateway层 - 设置入口
+import os
+from pathlib import Path
 from fastapi import APIRouter
 from gateway.schema import SaveRequest
-from config import read_env_file, ENV_PATH
 
 settings_router = APIRouter(prefix="/api/settings", tags=["设置接口"])
+
+ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
 
 # .env 中允许前端读写的白名单字段
 ALLOWED_KEYS = [
@@ -17,6 +16,18 @@ ALLOWED_KEYS = [
     "MIMO_API_KEY", "MIMO_BASE_URL", "MODEL_ASR", "MODEL_TTS",
     "WAKE_WORD", "WAKE_REPLY", "CONVERSATION_TIMEOUT", "VOICE_SAMPLE_PATH",
 ]
+
+
+def _read_env() -> dict:
+    result = {}
+    if ENV_PATH.exists():
+        for line in ENV_PATH.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                key, _, value = line.partition("=")
+                result[key.strip()] = value.strip()
+    return result
+
 
 # .env 模板（保留注释结构）
 _ENV_TEMPLATE = """# ========================
@@ -58,8 +69,7 @@ VOICE_SAMPLE_PATH={VOICE_SAMPLE_PATH}
 
 
 def _write_env(data: dict):
-    """将键值对写入 .env 文件（保留注释模板）"""
-    existing = read_env_file()
+    existing = _read_env()
     existing.update(data)
     content = _ENV_TEMPLATE.format(**{k: existing.get(k, "") for k in ALLOWED_KEYS})
     ENV_PATH.write_text(content, encoding="utf-8")
@@ -67,7 +77,7 @@ def _write_env(data: dict):
 
 @settings_router.get("/load")
 def load_settings():
-    env = read_env_file()
+    env = _read_env()
     return {"success": True, "env": env}
 
 

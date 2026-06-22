@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>芙芙助手 · 管理后台</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f0f2f5;
+      color: #333;
+      padding: 24px;
+      max-width: 960px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-size: 22px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    h1 small {
+      font-size: 13px;
+      font-weight: 400;
+      color: #888;
+    }
+
+    /* 卡片 */
+    .card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    }
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* 通道状态 */
+    .channel-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid #f5f5f5;
+    }
+    .channel-row:last-child { border-bottom: none; }
+    .channel-name { font-weight: 500; }
+    .channel-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .badge.online { background: #e6f7e6; color: #1a7d1a; }
+    .badge.offline { background: #f5f5f5; color: #999; }
+    .badge.pending { background: #fff3e0; color: #e67e00; }
+
+    .btn {
+      padding: 6px 16px;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-primary { background: #4a90d9; color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: #3a7bc8; }
+    .btn-danger { background: #e74c3c; color: #fff; }
+    .btn-danger:hover:not(:disabled) { background: #c0392b; }
+    .btn-success { background: #27ae60; color: #fff; }
+    .btn-success:hover:not(:disabled) { background: #1e8449; }
+
+    .qrcode-box {
+      margin-top: 12px;
+      padding: 12px 16px;
+      background: #fff8e1;
+      border-radius: 8px;
+      font-size: 13px;
+      display: none;
+    }
+    .qrcode-box.show { display: block; }
+    .qrcode-box a { color: #4a90d9; word-break: break-all; }
+
+    /* 设置表单 */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .form-group label { font-size: 12px; color: #666; }
+    .form-group input, .form-group select {
+      padding: 7px 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 13px;
+      outline: none;
+    }
+    .form-group input:focus { border-color: #4a90d9; }
+    .form-full { grid-column: 1 / -1; }
+
+    .msg { font-size: 12px; margin-top: 6px; min-height: 18px; }
+    .msg.success { color: #27ae60; }
+    .msg.error { color: #e74c3c; }
+
+    /* 统计 */
+    .stats-row {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .stat-item {
+      flex: 1;
+      min-width: 120px;
+      text-align: center;
+      padding: 12px;
+      background: #fafafa;
+      border-radius: 8px;
+    }
+    .stat-item .num { font-size: 24px; font-weight: 700; color: #4a90d9; }
+    .stat-item .label { font-size: 12px; color: #888; margin-top: 4px; }
+
+    @media (max-width: 640px) {
+      body { padding: 12px; }
+      .form-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<h1>🖥 芙芙助手 <small>管理后台</small></h1>
+
+<!-- ===== 消息通道 ===== -->
+<div class="card">
+  <div class="card-title">📨 消息通道</div>
+  <div id="channelList"><div style="color:#999;font-size:13px;">加载中...</div></div>
+  <div class="qrcode-box" id="qrcodeBox">
+    <strong>📱 请扫码登录</strong><br>
+    浏览器打开此链接，用微信扫描二维码：<br>
+    <a id="qrcodeLink" href="#" target="_blank"></a>
+    <div style="margin-top:6px;font-size:12px;color:#999;">扫描确认后通道会自动启动</div>
+  </div>
+</div>
+
+<!-- ===== 统计概览 ===== -->
+<div class="card">
+  <div class="card-title">📊 Token 用量</div>
+  <div class="stats-row" id="statsRow">
+    <div class="stat-item"><div class="num" id="totalTokens">-</div><div class="label">累计 Token</div></div>
+    <div class="stat-item"><div class="num" id="totalChats">-</div><div class="label">总对话次数</div></div>
+    <div class="stat-item"><div class="num" id="todayTokens">-</div><div class="label">今日 Token</div></div>
+  </div>
+</div>
+
+<!-- ===== 设置 ===== -->
+<div class="card">
+  <div class="card-title">⚙️ 配置</div>
+  <div class="form-grid">
+    <div class="form-group form-full"><label>DeepSeek API Key</label><input id="deepseekApiKey" placeholder="sk-..."></div>
+    <div class="form-group"><label>Base URL</label><input id="deepseekBaseUrl" placeholder="https://api.deepseek.com/v1"></div>
+    <div class="form-group"><label>模型</label><input id="chatModel" placeholder="deepseek-v4-pro"></div>
+    <div class="form-group"><label>Temperature</label><input id="temperature" type="number" step="0.1" min="0" max="2" placeholder="0.7"></div>
+    <div class="form-group"><label>SiliconFlow API Key</label><input id="siliconApiKey" placeholder="sk-..."></div>
+    <div class="form-group"><label>Embedding 模型</label><input id="embeddingModel" placeholder="BAAI/bge-m3"></div>
+    <div class="form-group"><label>Tavily API Key</label><input id="tavilyKey" placeholder="tvly-..."></div>
+  </div>
+  <button class="btn btn-primary" id="btnSaveSettings" style="margin-top:12px;">保存配置</button>
+  <div class="msg" id="settingsMsg"></div>
+</div>
+
+<script>
+const API = 'http://localhost:5432/api';
+
+// ======================== 消息通道 ========================
+
+async function refreshChannels() {
+  const el = document.getElementById('channelList');
+  const qbox = document.getElementById('qrcodeBox');
+  qbox.classList.remove('show');
+
+  try {
+    const res = await fetch(API + '/mi/status');
+    const data = await res.json();
+    if (!data.success) { el.innerHTML = '<span class="error">加载失败</span>'; return; }
+
+    const channels = data.channels || {};
+    let html = '';
+    for (const [name, ch] of Object.entries(channels)) {
+      const running = ch.running;
+      const statusBadge = running
+        ? '<span class="badge online">● 运行中</span>'
+        : '<span class="badge offline">○ 已停止</span>';
+
+      html += '<div class="channel-row">';
+      html += `<div><span class="channel-name">${name}</span> ${statusBadge}</div>`;
+      html += '<div>';
+      if (running) {
+        html += `<button class="btn btn-danger" onclick="stopChannel('${name}')">停止</button>`;
+      } else {
+        html += `<button class="btn btn-success" onclick="startChannel('${name}')">启动</button>`;
+      }
+      html += '</div></div>';
+
+      // 如果有二维码信息
+      if (ch.login && ch.login.qrcode) {
+        const q = ch.login.qrcode;
+        document.getElementById('qrcodeLink').href = q.url;
+        document.getElementById('qrcodeLink').textContent = q.url;
+        qbox.classList.add('show');
+      }
+    }
+    el.innerHTML = html || '<div style="color:#999;">暂无通道</div>';
+  } catch (e) {
+    el.innerHTML = `<div style="color:#e74c3c;">无法连接后端: ${e.message}</div>`;
+  }
+}
+
+async function startChannel(name) {
+  try {
+    const res = await fetch(API + '/mi/start', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({channel: name})
+    });
+    const data = await res.json();
+    if (data.qrcode) {
+      document.getElementById('qrcodeLink').href = data.qrcode.url;
+      document.getElementById('qrcodeLink').textContent = data.qrcode.url;
+      document.getElementById('qrcodeBox').classList.add('show');
+    }
+    refreshChannels();
+  } catch (e) {
+    alert('启动失败: ' + e.message);
+  }
+}
+
+async function stopChannel(name) {
+  try {
+    await fetch(API + '/mi/stop', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({channel: name})
+    });
+    refreshChannels();
+  } catch (e) {
+    alert('停止失败: ' + e.message);
+  }
+}
+
+// ======================== Token 统计 ========================
+
+async function refreshStats() {
+  try {
+    const res = await fetch(API + '/metrics');
+    const data = await res.json();
+    document.getElementById('totalTokens').textContent = data.total_tokens ?? '-';
+    document.getElementById('totalChats').textContent = data.total_chats ?? '-';
+    document.getElementById('todayTokens').textContent = data.today_tokens ?? '-';
+  } catch (e) {
+    // 没有 metrics 接口就忽略
+  }
+}
+
+// ======================== 设置 ========================
+
+async function loadSettings() {
+  try {
+    const res = await fetch(API + '/settings/load');
+    const data = await res.json();
+    if (data.success) {
+      const e = data.env;
+      document.getElementById('deepseekApiKey').value = e.DEEPSEEK_API_KEY || '';
+      document.getElementById('deepseekBaseUrl').value = e.DEEPSEEK_BASE_URL || 'https://api.deepseek.com/v1';
+      document.getElementById('chatModel').value = e.CHAT_MODEL || 'deepseek-v4-pro';
+      document.getElementById('temperature').value = e.TEMPERATURE || 0.7;
+      document.getElementById('siliconApiKey').value = e.SILICONFLOW_API_KEY || '';
+      document.getElementById('embeddingModel').value = e.EMBEDDING_MODEL || 'BAAI/bge-m3';
+      document.getElementById('tavilyKey').value = e.TAVILYWEB_KEY || '';
+    }
+  } catch (e) {}
+}
+
+document.getElementById('btnSaveSettings').addEventListener('click', async () => {
+  const msg = document.getElementById('settingsMsg');
+  msg.textContent = '保存中...';
+  msg.className = 'msg';
+  try {
+    const env = {
+      DEEPSEEK_API_KEY: document.getElementById('deepseekApiKey').value,
+      DEEPSEEK_BASE_URL: document.getElementById('deepseekBaseUrl').value,
+      CHAT_MODEL: document.getElementById('chatModel').value,
+      TEMPERATURE: document.getElementById('temperature').value,
+      SILICONFLOW_API_KEY: document.getElementById('siliconApiKey').value,
+      SILICONFLOW_BASE_URL: 'https://api.siliconflow.cn/v1/',
+      EMBEDDING_MODEL: document.getElementById('embeddingModel').value,
+      TAVILYWEB_KEY: document.getElementById('tavilyKey').value,
+    };
+    const res = await fetch(API + '/settings/save', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({env})
+    });
+    const data = await res.json();
+    msg.textContent = data.success ? '✅ 保存成功' : '❌ ' + (data.msg || '失败');
+    msg.className = 'msg ' + (data.success ? 'success' : 'error');
+  } catch (e) {
+    msg.textContent = '❌ ' + e.message;
+    msg.className = 'msg error';
+  }
+});
+
+// ======================== 自动刷新 ========================
+
+refreshChannels();
+refreshStats();
+loadSettings();
+setInterval(refreshChannels, 5000);
+setInterval(refreshStats, 30000);
+</script>
+</body>
+</html>

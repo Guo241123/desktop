@@ -19,11 +19,10 @@ os.makedirs(DEFAULT_IMG_SAVE_DIR, exist_ok=True)
 @tool
 def web_search(query: str, save_path: str = None) -> str:
     """
-    联网实时搜索工具，可获取文字+配图链接，用于查询新闻、资料、配图。
-    自动下载 jpg / jpeg / png 图片到指定路径（不指定则用默认）。
-    参数:
-        query: 搜索关键词/问题
-        save_path: 图片保存目录（可选，不传则使用默认路径）
+    联网搜索，返回文字结果+图片链接。
+    自动下载 jpg/png 图片到本地。
+    :param query: 搜索关键词
+    :param save_path: 图片保存目录（可选，默认 data/search_img）
     """
     try:
         if not save_path:

@@ -34,21 +34,20 @@ def get_user_profile(session_id: str = "default"):
 @tool
 def update_user_profile(field: str, value: str, session_id: str = "default"):
     """
-    记录或更新用户的某个特征信息。
-    在聊天过程中观察到用户的性格、习惯、口头禅等时调用此工具记录。
-    
-    可用字段：
-    - summary: 用户整体画像摘要
-    - traits: 性格特点（多个用逗号分隔）
-    - catchphrases: 常用口头禅（多个用逗号分隔）
-    - habits: 使用习惯（多个用逗号分隔）
-    - speaking_style: 说话风格描述
-    - preferences.topics: 感兴趣的话题（多个用逗号分隔）
-    - preferences.response_style: 偏好的回复风格
-    
-    :param field: 字段名，如 "traits"、"catchphrases"、"speaking_style"
-    :param value: 字段值，如 "幽默, 直爽" 或 "喜欢说"笑死""
-    :param session_id: 会话ID（一般不用改）
+    记录/更新用户的某个特征（性格、习惯、兴趣等）。
+    可用字段：summary, user_name, traits, speaking_style, emotional_tone,
+    emotional_stability, social_orientation, humor_type, catchphrases,
+    habits, message_length, question_frequency, emoji_usage,
+    punctuation_style, language_style, active_hours, active_days,
+    conversation_frequency, response_speed, interaction_type, initiative,
+    learning_style, decision_style, attention_span, detail_orientation,
+    expertise_areas, knowledge_level, technical_background, industry,
+    preferences.topics, preferences.response_style, preferences.core_values,
+    preferences.goal_orientation
+    不确定有哪些字段时用 get_user_profile 查看。
+    :param field: 字段名
+    :param value: 字段值
+    :param session_id: 会话ID
     :return: 更新结果
     """
     profile = load_profile(session_id)

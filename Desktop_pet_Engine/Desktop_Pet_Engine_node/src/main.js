@@ -162,10 +162,21 @@ ipcMain.on('drag-end', () => isDragging = false);
 
 function startBackend() {
   const isDev = !app.isPackaged;
-  
+
+  // ── 先检查后端是否已在运行 ────────────────────────────────
+  const http = require('http');
+  const probe = http.get('http://127.0.0.1:5432/', (res) => {
+    console.log('[backend] 检测到后端已在运行，跳过启动');
+    res.resume(); // 确保响应体被消费，连接正常关闭
+  });
+  probe.on('error', () => { doSpawnBackend(isDev); });
+  probe.setTimeout(1000, () => { probe.destroy(); doSpawnBackend(isDev); });
+  probe.end();
+}
+
+function doSpawnBackend(isDev) {
   const { execSync } = require('child_process');
   try { execSync('taskkill /f /im backend.exe 2>nul', { stdio: 'ignore', windowsHide: true }); } catch (e) {}
-  try { execSync('taskkill /f /fi "PID ne 0" /im python.exe 2>nul', { stdio: 'ignore', windowsHide: true }); } catch (e) {}
 
   // ── 动态路径：基于 main.js 所在目录（src/）向上定位 ──────────
   const backendDir = path.resolve(__dirname, '..', '..', 'Desktop_Pet_Engine');

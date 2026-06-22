@@ -12,8 +12,6 @@ import webbrowser
 from pathlib import Path
 from typing import Optional
 
-import qrcode
-
 from mi.base import BaseChannel
 from mi.router import route_to_agent
 from mi.channels.wechat_api import (
@@ -42,12 +40,14 @@ class WeChatChannel(BaseChannel):
     def __init__(self):
         self._api: Optional[ILinKAPI] = None
         self._running = False
+        self._healthy = False
         self._task: Optional[asyncio.Task] = None
         self._login_task: Optional[asyncio.Task] = None
         self._last_qrcode: Optional[dict] = None
         self._last_user_id: str = ""
         self._last_context_token: str = ""
         self._reminder_task: Optional[asyncio.Task] = None
+        self._consecutive_errors = 0
 
     # ── 文本处理 ──────────────────────────────────────────────
 
@@ -152,58 +152,51 @@ class WeChatChannel(BaseChannel):
     def login_status(self) -> dict:
         return {
             "running": self._running,
+            "healthy": self._healthy,
             "has_credentials": bool(load_credentials()),
             "qrcode": self._last_qrcode,
+            "errors": self._consecutive_errors,
         }
 
     async def start(self) -> dict:
         if self._running:
             return {"started": False, "msg": "已在运行"}
 
-        bot_token, bot_base_url = self._ensure_credentials()
-        if bot_token:
-            self._api = ILinKAPI(bot_token=bot_token, bot_base_url=bot_base_url)
-            self._running = True
-            self._task = asyncio.create_task(self._poll_loop())
-            self._reminder_task = asyncio.create_task(self._reminder_loop())
-            logger.info("微信通道已启动（使用已保存凭证）")
-            return {"started": True, "msg": "微信通道已启动"}
-        else:
-            logger.info("无凭证，获取登录二维码...")
-            api = ILinKAPI()
-            try:
-                qr_data = await api.get_bot_qrcode()
-                if qr_data.get("ret") != 0:
-                    raise Exception(f"获取二维码失败: {qr_data}")
-                qrcode_id = qr_data.get("qrcode", "")
-                qrcode_url = qr_data.get("qrcode_img_content", "")
-                if not qrcode_id:
-                    raise Exception(f"未找到 qrcode 字段: {qr_data}")
-            finally:
-                await api.close()
+        # 清空旧凭证，保证每次重新扫码
+        from config.paths import WECHAT_CREDENTIALS_FILE
+        if WECHAT_CREDENTIALS_FILE.exists():
+            WECHAT_CREDENTIALS_FILE.unlink()
 
-            self._last_qrcode = {"qrcode_id": qrcode_id, "qrcode_url": qrcode_url}
+        logger.info("获取登录二维码...")
+        api = ILinKAPI()
+        try:
+            qr_data = await api.get_bot_qrcode()
+            if qr_data.get("ret") != 0:
+                raise Exception(f"获取二维码失败: {qr_data}")
+            qrcode_id = qr_data.get("qrcode", "")
+            qrcode_url = qr_data.get("qrcode_img_content", "")
+            if not qrcode_id:
+                raise Exception(f"未找到 qrcode 字段: {qr_data}")
+        finally:
+            await api.close()
 
-            print("")
-            print("=" * 60)
-            print("  请使用微信扫描下方二维码登录 Bot")
-            print("=" * 60)
-            if qrcode_url:
-                webbrowser.open(qrcode_url)
-                print(f"  二维码图片: {qrcode_url}")
-            qr = qrcode.QRCode(version=3, error_correction=qrcode.constants.ERROR_CORRECT_H, box_size=1, border=1)
-            qr.add_data(qrcode_url or qrcode_id)
-            qr.make(fit=True)
-            qr.print_ascii(invert=True)
-            print("=" * 60)
-            print("")
+        self._last_qrcode = {"qrcode_id": qrcode_id, "qrcode_url": qrcode_url}
 
-            self._login_task = asyncio.create_task(self._wait_login_background(qrcode_id))
-            logger.info("二维码已获取，等待扫码登录")
-            return {
-                "started": False, "msg": "请在微信中扫描二维码登录",
-                "qrcode": {"id": qrcode_id, "url": qrcode_url},
-            }
+        # 显示二维码
+        logger.info("=" * 40)
+        logger.info("请使用微信扫描二维码登录 Bot")
+        if qrcode_url:
+            webbrowser.open(qrcode_url)
+            logger.info("二维码图片: %s", qrcode_url)
+        logger.info("二维码ID: %s", qrcode_id)
+        logger.info("=" * 40)
+
+        self._login_task = asyncio.create_task(self._wait_login_background(qrcode_id))
+        logger.info("二维码已获取，等待扫码登录")
+        return {
+            "started": False, "msg": "请在微信中扫描二维码登录",
+            "qrcode": {"id": qrcode_id, "url": qrcode_url},
+        }
 
     @staticmethod
     def _ensure_credentials() -> tuple[str, Optional[str]]:
@@ -273,16 +266,37 @@ class WeChatChannel(BaseChannel):
 
     async def _poll_loop(self):
         logger.info("微信 Bot 长轮询已开始")
+        self._healthy = True
+        self._consecutive_errors = 0
         while self._running:
             try:
                 data = await self._api.get_updates()
+                self._consecutive_errors = 0
+                self._healthy = True
                 for msg in data.get("msgs", []):
                     await self._process_message(msg)
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                logger.warning("获取微信消息出错: %s", e)
-                await asyncio.sleep(5)
+                self._consecutive_errors += 1
+                logger.warning("获取消息出错 (连续第 %d 次): %s", self._consecutive_errors, e)
+                self._healthy = False
+
+                # 连续失败次数多了，重建 API 客户端（清理旧连接池）
+                if self._consecutive_errors >= 5:
+                    logger.info("连续失败，重建 API 客户端...")
+                    try:
+                        bot_token = self._api.bot_token if self._api else ""
+                        bot_base_url = self._api.base_url if self._api else ""
+                        await self._api.close()
+                        self._api = ILinKAPI(bot_token=bot_token, bot_base_url=bot_base_url)
+                        logger.info("API 客户端已重建")
+                    except Exception as rebuild_err:
+                        logger.warning("重建客户端失败: %s", rebuild_err)
+
+                # 指数退避：错误越多等越久（最多 60 秒）
+                wait = min(5 * (2 ** (self._consecutive_errors // 5)), 60)
+                await asyncio.sleep(wait)
 
     async def _reminder_loop(self):
         while self._running:

@@ -45,6 +45,8 @@ def _inject_profile(chat_history: list, session_id: str) -> list:
 def agent_main(message: str, session_id: str = "default", system_prompt: str = None) -> dict:
     """主聊天逻辑（走 Agent，JSON 输出格式）"""
     try:
+        from utils.metrics import record_request
+
         memory = MemoryManager(session_id)
         chat_history = memory.load_chat_history()
         chat_history.append({"role": "user", "content": message})
@@ -54,6 +56,16 @@ def agent_main(message: str, session_id: str = "default", system_prompt: str = N
         res = get_agent(system_prompt).invoke({"messages": enhanced_history})
         raw_content = res["messages"][-1].content
         ai_content = raw_content.strip() if isinstance(raw_content, str) else str(raw_content).strip()
+
+        # 统计 token 用量
+        try:
+            meta = res.get("response_metadata", {})
+            usage = meta.get("token_usage", {}) or meta.get("usage", {})
+            inp = usage.get("prompt_tokens", 0) or usage.get("input_tokens", 0)
+            out = usage.get("completion_tokens", 0) or usage.get("output_tokens", 0)
+            record_request(input_tokens=inp, output_tokens=out)
+        except Exception:
+            record_request()
 
         if not ai_content:
             resp_dict = {"text": "ok了", "mood": "温柔", "emoji": "😊", "tool": ""}

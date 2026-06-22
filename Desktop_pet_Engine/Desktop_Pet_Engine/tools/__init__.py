@@ -22,6 +22,7 @@ def discover_tools() -> list[BaseTool]:
             continue
         if file_path.stem.startswith("_"):
             continue
+
         module_name = f"tools.{file_path.stem}"
         try:
             module = importlib.import_module(module_name)

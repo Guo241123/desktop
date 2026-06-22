@@ -11,22 +11,26 @@ logger = logging.getLogger(__name__)
 @tool
 def make_dir(dir_path):
     """
-    创建单个文件夹，不要使用表情、图
-    :param dir_path: 文件夹完整路径
+    创建单个文件夹
+    :param dir_path: 文件夹完整路径（建议用桌面或沙盒目录）
     """
     try:
         dir_path = os.path.expanduser(dir_path)
         os.makedirs(dir_path, exist_ok=True)
-        logger.info(f"目录创建成功: {dir_path}")
+        msg = f"目录创建成功：{dir_path}"
+        print(msg)
+        return msg
     except Exception as e:
-        logger.error(f"创建目录失败: {e}")
+        msg = f"创建失败：{e}。试试用桌面路径 C:\\Users\\你的用户名\\Desktop\\文件夹名"
+        print(msg)
+        return msg
 
 
 # 2. 创建空文件
 @tool
 def make_file(file_path = "~/Desktop"):
     """
-    创建空文件，不要使用表情、图
+    在电脑上创建一个新的空文件。当用户说"创建XX文件"或"新建一个文件"时使用此工具。
     :param file_path: 文件完整路径
     """
     try:
@@ -42,7 +46,7 @@ def make_file(file_path = "~/Desktop"):
 @tool
 def read_file(file_path):
     """
-    读取文件内容
+    读取电脑上的文本文件内容并返回。当用户说"打开XX文件"或"看看XX文件内容"时使用。
     :param file_path: 文件路径
     :return: 文件字符串内容
     """
@@ -61,8 +65,8 @@ def read_file(file_path):
 @tool
 def del_file(file_path):
     """
-    删除单个文件
-    :param file_path: 文件路径
+    删除电脑上的单个文件。当用户说"删除XX文件"或"把XX删掉"时使用此工具。
+    :param file_path: 要删除的文件完整路径
     """
     try:
         file_path = os.path.expanduser(file_path)
@@ -214,7 +218,8 @@ def batch_change_suffix(folder, old_suf, new_suf):
 @tool
 def write_file(file_path, content):
     """
-        向文件写入内容（如果文件不存在会自动创建，存在则覆盖）
+        将内容写入电脑上的文件（如果文件不存在会自动创建，存在则覆盖原内容）。
+        当用户说"往XX文件写入XX内容"或"编辑XX文件"时使用此工具。
         :param file_path: 文件路径
         :param content: 要写入的内容
     """

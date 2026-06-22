@@ -32,13 +32,11 @@ def get_sandbox_path():
 @tool
 def execute_command(command: str, work_dir: str = ""):
     """
-    在本地电脑上执行命令行命令（PowerShell / cmd）。
-    适合用来运行脚本、查看系统信息、编译代码等操作。
-    默认在沙盒目录中执行，避免影响系统文件。
-    注意：不要执行可能损坏系统的危险命令（如格式化、删除系统目录等）。
-    :param command: 要执行的命令，例如 "dir"、"python --version"、"git status"
-    :param work_dir: 工作目录（可选，留空则使用沙盒目录）
-    :return: 命令的标准输出和标准错误
+    在本地电脑执行命令行命令（PowerShell/cmd）。
+    会做安全过滤，禁止格式化/删系统目录等危险操作。
+    :param command: 要执行的命令，如 "dir"、"python --version"
+    :param work_dir: 工作目录（可选，默认沙盒目录）
+    :return: 命令输出
     """
     # 确定工作目录
     if work_dir and work_dir.strip():
