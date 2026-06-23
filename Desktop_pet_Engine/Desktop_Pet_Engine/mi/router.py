@@ -5,7 +5,6 @@
 
 import json
 import logging
-from gateway.chat_gateway import chat_with_agent
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +17,8 @@ async def route_to_agent(
 ) -> str:
     """将消息路由到 Gateway（再转发到 Agent），返回回复文本"""
     try:
+        # 懒加载避免循环导入（tools → mi → router → gateway → agent → tools）
+        from gateway.chat_gateway import chat_with_agent
         result = chat_with_agent(message, session_id=session_id, system_prompt=system_prompt)
         return result
     except Exception as e:
