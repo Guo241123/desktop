@@ -331,3 +331,10 @@ def save_credentials(data: Dict[str, Any]):
     STATE_DIR.mkdir(parents=True, exist_ok=True)
     with open(CREDENTIALS_FILE, "w") as f:
         json.dump(data, f, indent=2)
+
+
+def delete_credentials():
+    """删除已保存的微信登录凭证，下次启动需重新扫码登录。"""
+    if CREDENTIALS_FILE.exists():
+        CREDENTIALS_FILE.unlink()
+        logger.info("已清除微信登录凭证，下次扫码登录")

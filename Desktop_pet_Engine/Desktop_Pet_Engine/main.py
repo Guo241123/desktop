@@ -30,6 +30,10 @@ app.add_middleware(
 # 注册路由
 register_routes(app)
 
+# 每次启动时清除微信登录凭证，确保重新扫码登录
+from mi.channels.wechat_api import delete_credentials
+delete_credentials()
+
 @app.get("/")
 def index():
     return {"status": "ok", "msg": "你好啊~"}
