@@ -67,7 +67,17 @@ def agent_main(message: str, session_id: str = "default", system_prompt: str = N
                 if "text" not in resp_dict:
                     resp_dict = {"text": ai_content, "mood": "assistant", "emoji": "💬"}
             except json.JSONDecodeError:
-                resp_dict = {"text": ai_content, "mood": "assistant", "emoji": "📝"}
+                # JSON 解析失败：如果正则找到了 {} 但解析失败，
+                # 尝试取 {} 前面的文本（AI 经常在 JSON 前写闲聊）
+                if json_match:
+                    before_json = ai_content[:json_match.start()].strip()
+                    if before_json:
+                        resp_dict = {"text": before_json, "mood": "assistant", "emoji": "💬"}
+                    else:
+                        # 整个内容就是残缺 JSON，保底回复
+                        resp_dict = {"text": "嗯嗯~", "mood": "温柔", "emoji": "😊", "tool": ""}
+                else:
+                    resp_dict = {"text": ai_content, "mood": "assistant", "emoji": "📝"}
         
         # 解析 tool 字段并执行工具
         tool_name = resp_dict.get("tool", "")
