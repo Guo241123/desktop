@@ -27,6 +27,15 @@ class MemoryManager:
         """保存对话记录到向量存储"""
         save_chat_record(self.session_id, user_text, ai_text)
 
+    def compress_memory(self, keep_last: int = 20):
+        """压缩聊天历史，只保留最近 keep_last 条消息，减少 token 消耗"""
+        chat_history = self.load_chat_history()
+        if len(chat_history) <= keep_last:
+            return False
+        chat_history = chat_history[-keep_last:]
+        self.save_chat_history(chat_history)
+        return True
+
     def clear(self):
         """清除所有记忆"""
         clear_memory(self.session_id)

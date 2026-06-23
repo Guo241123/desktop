@@ -266,6 +266,7 @@ class WeChatChannel(BaseChannel):
                 logger.warning("提醒检查出错: %s", e)
             await asyncio.sleep(5)
 
+
     async def _process_message(self, msg: dict):
         """处理单条消息"""
         try:

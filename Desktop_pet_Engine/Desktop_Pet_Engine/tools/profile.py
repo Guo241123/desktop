@@ -1,15 +1,16 @@
-"""用户画像工具 — 记录你对用户的了解
+"""用户画像工具 — 记录用户 + 压缩聊天记忆
 
-AI 通过聊天观察用户，把了解记成 5 段画像。
-画像会自动注入每次对话的提示词中，让回复更贴心。
+AI 在聊天中观察用户，用此工具把了解记成 5 段画像，
+同时会自动压缩聊天历史（只保留最近的对话）。
 """
 
 import logging
 from langchain.tools import tool
 from memory.user_profile import (
     load_profile, save_profile,
-    DEFAULT_PROFILE, SECTION_LABELS,
+    SECTION_LABELS,
 )
+from memory.memory_manager import MemoryManager
 
 logger = logging.getLogger(__name__)
 
@@ -24,8 +25,9 @@ def update_user_profile(
     session_id: str = "default",
 ):
     """
-    记录你对用户的了解，按 5 个维度分类保存。
+    记录你对用户的了解，按 5 个维度保存，同时自动压缩聊天记忆。
     传入的字段会覆盖旧值，空的字段保持不变，想记什么就记什么。
+    建议定期使用此工具回顾聊天记录，更新画像。
 
     各字段说明：
     - personal_info: ① 个人信息（姓名、年龄、职业、所在地等）
@@ -61,7 +63,13 @@ def update_user_profile(
     if not ok:
         return "⚠️ 保存失败"
 
+    # 自动压缩聊天记忆
+    mm = MemoryManager(session_id)
+    compressed = mm.compress_memory(keep_last=20)
+
     parts = [f"✅ 已更新用户画像（第 {profile['update_count']} 次）"]
     if updated:
         parts.append(f"更新了：{'、'.join(updated)}")
+    if compressed:
+        parts.append("📦 聊天记忆已压缩")
     return " | ".join(parts)
