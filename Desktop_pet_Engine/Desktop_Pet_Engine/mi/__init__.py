@@ -3,7 +3,6 @@
 
 from mi.base import BaseChannel
 from mi.manager import ChannelManager, channel_manager
-from mi.router import route_to_agent
 
 # ── 自动注册已知通道 ──────────────────────────────────────────
 from mi.channels.wechat import WeChatChannel
