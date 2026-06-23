@@ -86,7 +86,8 @@ def debug_send():
     
     from tools.send_to_wechat import send_file_to_wechat
     try:
-        result = send_file_to_wechat(tmp.name)
+        # 模拟 agent 调用方式：invoke
+        result = send_file_to_wechat.invoke({"file_path": tmp.name})
         info["test_result"] = result
     except Exception as e:
         info["test_error"] = str(e)

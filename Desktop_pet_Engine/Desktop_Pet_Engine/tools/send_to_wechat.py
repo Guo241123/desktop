@@ -175,7 +175,7 @@ def send_file_to_wechat(file_path: str):
     当用户要求你把电脑上的文件/图片/视频发到他们的微信时，使用此工具。
     :param file_path: 要发送的文件的完整路径
     """
-    path = Path(file_path)
+    path = Path(file_path).expanduser()
     if not path.exists():
         return f"文件不存在: {file_path}"
 
