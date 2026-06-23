@@ -64,6 +64,19 @@ def agent_main(message: str, session_id: str = "default", system_prompt: str = N
                     resp_dict = {"text": ai_content, "mood": "assistant", "emoji": "💬"}
             except json.JSONDecodeError:
                 resp_dict = {"text": ai_content, "mood": "assistant", "emoji": "📝"}
+        
+        # 解析 tool 字段并执行工具
+        tool_name = resp_dict.get("tool", "")
+        if tool_name == "send_file_to_wechat":
+            file_path = resp_dict.get("file_path", "")
+            if file_path:
+                try:
+                    from tools.send_to_wechat import send_file_to_wechat
+                    result = send_file_to_wechat.invoke({"file_path": file_path})
+                    resp_dict["text"] = f"{result}"
+                except Exception as e:
+                    logger.warning("执行 send_file_to_wechat 失败: %s", e)
+                    resp_dict["text"] = f"发文件失败了: {e}"
 
         reply_text = resp_dict.get("text", "")
 
