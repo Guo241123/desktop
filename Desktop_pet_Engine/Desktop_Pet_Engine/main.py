@@ -31,16 +31,16 @@ app.add_middleware(
 register_routes(app)
 
 # 每次启动时清除微信登录凭证，确保重新扫码登录
-from mi.channels.wechat_api import delete_credentials
-delete_credentials()
+from gateway.mi_gateway import delete_wechat_credentials
+delete_wechat_credentials()
 
 logger = logging.getLogger(__name__)
 
 # 启动时自动拉起微信登录流程（无凭证则弹出二维码）
 @app.on_event("startup")
 async def auto_start_wechat():
-    from mi import channel_manager
-    result = await channel_manager.start("wechat")
+    from gateway.mi_gateway import start_wechat_channel
+    result = await start_wechat_channel()
     logger.info("微信通道自动启动: %s", result.get("msg", ""))
 
 @app.get("/")
