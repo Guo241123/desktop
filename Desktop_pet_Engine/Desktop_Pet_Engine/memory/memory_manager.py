@@ -1,6 +1,7 @@
 # Memory层 - 记忆统一管理接口
 from memory.chat_memory import load_memory, save_memory, clear_memory
 from memory.vector_store import get_session_vector, save_chat_record
+from datetime import datetime
 
 
 class MemoryManager:
@@ -20,7 +21,11 @@ class MemoryManager:
     def add_message(self, role: str, content: str):
         """添加一条消息到历史"""
         chat_history = self.load_chat_history()
-        chat_history.append({"role": role, "content": content})
+        chat_history.append({
+            "role": role,
+            "content": content,
+            "time": datetime.now().isoformat(timespec="seconds"),
+        })
         self.save_chat_history(chat_history)
 
     def save_record(self, user_text: str, ai_text: str):

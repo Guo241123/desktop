@@ -5,6 +5,7 @@
 自动注入用户画像实现个性化回复。
 """
 
+from datetime import datetime
 import json
 import logging
 from langchain.agents import create_agent
@@ -47,7 +48,7 @@ def agent_main(message: str, session_id: str = "default", system_prompt: str = N
     try:
         memory = MemoryManager(session_id)
         chat_history = memory.load_chat_history()
-        chat_history.append({"role": "user", "content": message})
+        chat_history.append({"role": "user", "content": message, "time": datetime.now().isoformat(timespec="seconds")})
 
         enhanced_history = _inject_profile(chat_history, session_id)
 
@@ -94,7 +95,7 @@ def agent_main(message: str, session_id: str = "default", system_prompt: str = N
 
         reply_text = resp_dict.get("text", "")
 
-        chat_history.append({"role": "assistant", "content": json.dumps(resp_dict, ensure_ascii=False)})
+        chat_history.append({"role": "assistant", "content": json.dumps(resp_dict, ensure_ascii=False), "time": datetime.now().isoformat(timespec="seconds")})
         memory.save_chat_history(chat_history)
         memory.save_record(message, reply_text)
 
