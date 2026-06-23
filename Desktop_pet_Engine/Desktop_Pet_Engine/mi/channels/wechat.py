@@ -54,7 +54,7 @@ class WeChatChannel(BaseChannel):
     @staticmethod
     def _split_text(text: str, max_len: int = 600) -> list[str]:
         import re
-        sentences = re.split(r"(?<=[~。！？!?])", text)
+        sentences = re.split(r"(?<=[~～。！？!?])", text)
         chunks = [s.strip() for s in sentences if s.strip()]
         return chunks if chunks else [text]
 
