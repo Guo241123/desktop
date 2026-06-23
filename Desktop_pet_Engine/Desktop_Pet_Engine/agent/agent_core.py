@@ -68,7 +68,7 @@ def agent_main(message: str, session_id: str = "default", system_prompt: str = N
         # 解析 tool 字段并执行工具
         tool_name = resp_dict.get("tool", "")
         if tool_name == "send_file_to_wechat":
-            file_path = resp_dict.get("file_path", "")
+            file_path = resp_dict.pop("file_path", "")
             if file_path:
                 try:
                     from tools.send_to_wechat import send_file_to_wechat
