@@ -34,6 +34,15 @@ register_routes(app)
 from mi.channels.wechat_api import delete_credentials
 delete_credentials()
 
+logger = logging.getLogger(__name__)
+
+# 启动时自动拉起微信登录流程（无凭证则弹出二维码）
+@app.on_event("startup")
+async def auto_start_wechat():
+    from mi import channel_manager
+    result = await channel_manager.start("wechat")
+    logger.info("微信通道自动启动: %s", result.get("msg", ""))
+
 @app.get("/")
 def index():
     return {"status": "ok", "msg": "你好啊~"}
