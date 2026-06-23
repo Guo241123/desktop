@@ -156,6 +156,18 @@ class WeChatChannel(BaseChannel):
             "qrcode": self._last_qrcode,
         }
 
+    def get_send_context(self) -> Optional[dict]:
+        """获取发送微信消息所需的上下文（公开接口，避免外部直接访问私有属性）"""
+        if not self._api or not self._running:
+            return None
+        if not self._last_user_id:
+            return None
+        return {
+            "bot_token": self._api.bot_token,
+            "to_user_id": self._last_user_id,
+            "context_token": self._last_context_token,
+        }
+
     async def start(self) -> dict:
         if self._running:
             return {"started": False, "msg": "已在运行"}

@@ -24,18 +24,22 @@ def make_dir(dir_path):
 
 # 2. 创建空文件
 @tool
-def make_file(file_path = "~/Desktop"):
+def make_file(file_path: str):
     """
-    创建空文件，不要使用表情、图
-    :param file_path: 文件完整路径
+    创建空文件
+    :param file_path: 文件完整路径（必传，可用 get_desktop_path() 拼接文件名）
     """
     try:
         file_path = os.path.expanduser(file_path)
+        if os.path.isdir(file_path):
+            return f"错误: '{file_path}' 是一个目录，请提供完整的文件路径（含文件名）"
         with open(file_path, 'w', encoding='utf-8'):
             pass
         logger.info(f"文件创建成功: {file_path}")
+        return f"文件已创建: {file_path}"
     except Exception as e:
         logger.error(f"创建文件失败: {e}")
+        return f"创建文件失败: {e}"
 
 
 # 3. 读取文本文件
@@ -48,13 +52,17 @@ def read_file(file_path):
     """
     try:
         file_path = os.path.expanduser(file_path)
+        if os.path.isdir(file_path):
+            return f"错误: '{file_path}' 是一个目录，请提供文件路径"
+        if not os.path.isfile(file_path):
+            return f"错误: 文件不存在 '{file_path}'"
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
         logger.info(f"读取成功: {file_path}")
         return content
     except Exception as e:
         logger.error(f"读取失败: {e}")
-        return None
+        return f"读取失败: {e}"
 
 
 # 4. 删除单个文件
@@ -234,25 +242,18 @@ def write_file(file_path, content):
 @tool
 def get_desktop_path():
     """
-    自动获取当前用户的桌面路径（跨平台支持 Windows/Mac/Linux）
+    自动获取当前用户的桌面路径（跨平台支持 Windows/Mac/Linux，含中文等本地化桌面名）
     :return: 桌面绝对路径字符串
     """
-    system = platform.system()
-
-    # Windows 系统
-    if system == "Windows":
-        desktop = os.path.join(os.path.expanduser("~"), "Desktop")
-    # Mac 系统
-    elif system == "Darwin":
-        desktop = os.path.join(os.path.expanduser("~"), "Desktop")
-    # Linux 系统
-    else:
-        desktop = os.path.join(os.path.expanduser("~"), "Desktop")
-
-    # 确保路径一定存在，不存在则自动创建
-    if not os.path.exists(desktop):
-        os.makedirs(desktop)
-
+    home = os.path.expanduser("~")
+    # 尝试多种本地化桌面名
+    for name in ["Desktop", "桌面", "Escritorio", "Bureau"]:
+        desktop = os.path.join(home, name)
+        if os.path.isdir(desktop):
+            return desktop
+    # 兜底：返回 Desktop 并自动创建
+    desktop = os.path.join(home, "Desktop")
+    os.makedirs(desktop, exist_ok=True)
     return desktop
 
 

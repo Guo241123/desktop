@@ -13,6 +13,33 @@ from mi.media_uploader import (
 logger = logging.getLogger(__name__)
 
 
+def _run_async(coro):
+    """在已有事件循环或新事件循环中安全运行协程"""
+    try:
+        loop = asyncio.get_running_loop()
+        # 已有运行中的循环 → 新线程避免嵌套
+        import threading
+        result = []
+        error = []
+        def _target():
+            try:
+                new_loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(new_loop)
+                result.append(new_loop.run_until_complete(coro))
+                new_loop.close()
+            except Exception as e:
+                error.append(e)
+        t = threading.Thread(target=_target)
+        t.start()
+        t.join()
+        if error:
+            raise error[0]
+        return result[0] if result else None
+    except RuntimeError:
+        # 无运行中循环
+        return asyncio.run(coro)
+
+
 async def _send_file_async(bot_token: str, to_user_id: str, context_token: str, file_path: Path):
     """上传本地文件到 CDN 并通过微信发送（自动识别类型）"""
     from mi.channels.wechat_api import ILinKAPI
@@ -100,19 +127,14 @@ def send_file_to_wechat(file_path: str):
 
     from mi.manager import channel_manager
     channel = channel_manager.get("wechat")
-    if not channel or not channel._api:
-        return "微信通道未连接，请先在微信上扫码登录"
-    if not channel._last_user_id:
-        return "没有找到微信用户，请先在微信上给我发一条消息"
-
-    bot_token = channel._api.bot_token
-    to_user_id = channel._last_user_id
-    context_token = channel._last_context_token
+    ctx = channel.get_send_context() if channel else None
+    if not ctx:
+        return "微信通道未连接或还未收到过你的消息，请先在微信上和我聊一句再试"
 
     try:
-        asyncio.run(_send_file_async(
-            bot_token=bot_token, to_user_id=to_user_id,
-            context_token=context_token, file_path=path,
+        _run_async(_send_file_async(
+            bot_token=ctx["bot_token"], to_user_id=ctx["to_user_id"],
+            context_token=ctx["context_token"], file_path=path,
         ))
         return f"已将 {path.name} 发送到你的微信！"
     except Exception as e:
