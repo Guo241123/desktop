@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import threading
 from pathlib import Path
 from langchain.tools import tool
 
@@ -13,35 +14,41 @@ from mi.media_uploader import (
 logger = logging.getLogger(__name__)
 
 
-def _run_async(coro):
-    """在已有事件循环或新事件循环中安全运行协程"""
+def _run_async_new_loop(coro_fn, *args, **kwargs):
+    """在独立线程的新事件环中运行协程函数。
+
+    协程在新线程内部创建，避免跨线程传递协程对象的线程安全问题。
+    httpx.AsyncClient 也在新线程的事件环上创建，不会绑定冲突。
+    """
     try:
-        loop = asyncio.get_running_loop()
-        # 已有运行中的循环 → 新线程避免嵌套
-        import threading
-        result = []
-        error = []
-        def _target():
-            try:
-                new_loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(new_loop)
-                result.append(new_loop.run_until_complete(coro))
-                new_loop.close()
-            except Exception as e:
-                error.append(e)
-        t = threading.Thread(target=_target)
-        t.start()
-        t.join()
-        if error:
-            raise error[0]
-        return result[0] if result else None
+        asyncio.get_running_loop()
     except RuntimeError:
-        # 无运行中循环
-        return asyncio.run(coro)
+        return asyncio.run(coro_fn(*args, **kwargs))
+
+    result = []
+    error = []
+
+    def _target():
+        try:
+            new_loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(new_loop)
+            result.append(new_loop.run_until_complete(coro_fn(*args, **kwargs)))
+            new_loop.close()
+        except Exception as e:
+            error.append(e)
+
+    t = threading.Thread(target=_target)
+    t.start()
+    t.join()
+    if error:
+        raise error[0]
+    return result[0] if result else None
 
 
-async def _send_file_async(bot_token: str, bot_base_url: str, to_user_id: str, context_token: str, file_path: Path):
-    """上传本地文件到 CDN 并通过微信发送（自动识别类型）"""
+async def _upload_and_send(bot_token: str, bot_base_url: str,
+                           to_user_id: str, context_token: str,
+                           file_path: Path):
+    """在新事件环中完整执行 加密→上传CDN→发送微信 流程。"""
     from mi.channels.wechat_api import ILinKAPI
 
     api = ILinKAPI(bot_token=bot_token, bot_base_url=bot_base_url)
@@ -49,31 +56,25 @@ async def _send_file_async(bot_token: str, bot_base_url: str, to_user_id: str, c
         raw_data = file_path.read_bytes()
         ext = file_path.suffix.lower()
 
-        # 判断媒体类型
         image_exts = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.tiff'}
         video_exts = {'.mp4', '.avi', '.mov', '.mkv', '.flv', '.wmv', '.webm'}
-        file_exts = {'.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
-                     '.zip', '.rar', '.7z', '.txt', '.md', '.csv', '.json'}
 
         if ext in image_exts:
-            media_type = 1  # IMAGE
+            media_type = 1
             raw_data = compress_image(raw_data)
             logger.info("图片压缩: %s -> %dKB", file_path.name, len(raw_data) // 1024)
         elif ext in video_exts:
-            media_type = 2  # VIDEO
+            media_type = 2
         else:
-            media_type = 3  # FILE
+            media_type = 3
 
         ciphertext, aes_key, raw_md5 = aes_encrypt(raw_data)
         filekey = make_filekey()
 
         upload_resp = await api.get_upload_url(
-            filekey=filekey,
-            to_user_id=to_user_id,
-            file_size=len(ciphertext),
-            aes_key=aes_key.hex(),
-            raw_size=len(raw_data),
-            raw_md5=raw_md5,
+            filekey=filekey, to_user_id=to_user_id,
+            file_size=len(ciphertext), aes_key=aes_key.hex(),
+            raw_size=len(raw_data), raw_md5=raw_md5,
             media_type=media_type,
         )
         upload_url = build_upload_url(upload_resp, filekey)
@@ -86,17 +87,17 @@ async def _send_file_async(bot_token: str, bot_base_url: str, to_user_id: str, c
 
         aes_key_b64 = aes_key_to_b64(aes_key)
 
-        if media_type == 1:  # IMAGE
+        if media_type == 1:
             item = {
                 "media": {"encrypt_query_param": download_param, "aes_key": aes_key_b64, "encrypt_type": 1},
                 "mid_size": len(ciphertext),
             }
-        elif media_type == 2:  # VIDEO
+        elif media_type == 2:
             item = {
                 "media": {"encrypt_query_param": download_param, "aes_key": aes_key_b64, "encrypt_type": 1},
                 "video_size": len(ciphertext),
             }
-        else:  # FILE
+        else:
             item = {
                 "media": {"encrypt_query_param": download_param, "aes_key": aes_key_b64, "encrypt_type": 1},
                 "file_name": file_path.name,
@@ -104,10 +105,8 @@ async def _send_file_async(bot_token: str, bot_base_url: str, to_user_id: str, c
             }
 
         await api.send_media(
-            to_user_id=to_user_id,
-            context_token=context_token,
-            media_type=media_type,
-            item=item,
+            to_user_id=to_user_id, context_token=context_token,
+            media_type=media_type, item=item,
         )
         logger.info("文件已发送到微信: %s (类型=%d)", file_path.name, media_type)
     finally:
@@ -132,11 +131,12 @@ def send_file_to_wechat(file_path: str):
         return "微信通道未连接或还未收到过你的消息，请先在微信上和我聊一句再试"
 
     try:
-        _run_async(_send_file_async(
-            bot_token=ctx["bot_token"], bot_base_url=ctx["bot_base_url"],
-            to_user_id=ctx["to_user_id"],
-            context_token=ctx["context_token"], file_path=path,
-        ))
+        _run_async_new_loop(
+            _upload_and_send,
+            ctx["bot_token"], ctx["bot_base_url"],
+            ctx["to_user_id"], ctx["context_token"],
+            path,
+        )
         return f"已将 {path.name} 发送到你的微信！"
     except Exception as e:
         logger.exception("发送文件到微信失败")
