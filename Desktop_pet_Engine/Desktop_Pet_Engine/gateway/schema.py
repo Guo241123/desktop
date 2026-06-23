@@ -1,9 +1,9 @@
-# Gateway层 - 数据模型定义
 from pydantic import BaseModel
 
 class ChatRequest(BaseModel):
+    session_id: str
     message: str
-    session_id: str = "default"
+    channel: str
 
 class ChatResponse(BaseModel):
     text: str

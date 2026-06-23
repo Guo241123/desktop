@@ -6,12 +6,14 @@ export default defineConfig({
   root: 'src/renderer',
   build: {
     outDir: '../../dist',
-    emptyOutDir: true
+    emptyOutDir: true,
+    assetsInclude: ['**/*.glb', '**/*.png']
   },
-  publicDir: '../../assets',
+  publicDir: 'public',
   resolve: {
     alias: {
-      '@assets': path.resolve(__dirname, './assets')
+      '@assets': path.resolve(__dirname, './assets'),
+      'three': path.resolve(__dirname, 'node_modules/three')
     }
   }
 });

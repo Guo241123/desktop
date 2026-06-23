@@ -1,3 +1,7 @@
+# 网关统一聊天接口地址，供mi微信通道内部调用
+GATEWAY_CHAT_API = "http://127.0.0.1:5432/api/data/chat"
+GATEWAY_REQUEST_TIMEOUT = 30
+
 """Gateway层 — 设置入口
 
 提供 /api/settings/load（读取 .env）和 /api/settings/save（写入 .env）接口。

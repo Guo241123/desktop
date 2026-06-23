@@ -12,10 +12,10 @@ import webbrowser
 from pathlib import Path
 from typing import Optional
 
+import httpx
 import qrcode
 
 from mi.base import BaseChannel
-from mi.router import route_to_agent
 from mi.channels.wechat_api import (
     ILinKAPI, MsgDirection, MessageItemType,
     load_credentials, save_credentials,
@@ -24,7 +24,7 @@ from mi.media_uploader import (
     compress_image, aes_encrypt, make_filekey,
     build_upload_url, aes_key_to_b64,
 )
-from agent.prompts import WECHAT_SYSTEM_PROMPT
+from gateway.settings_gateway import GATEWAY_CHAT_API, GATEWAY_REQUEST_TIMEOUT
 from config.paths import WECHAT_CREDENTIALS_DIR, WECHAT_CREDENTIALS_FILE, STICKERS_DIR, REMINDERS_FILE
 
 logger = logging.getLogger(__name__)
@@ -429,12 +429,15 @@ class WeChatChannel(BaseChannel):
             except Exception as e:
                 logger.debug("typing 指示器失败: %s", e)
 
-            reply = await route_to_agent(
-                session_id="default",
-                message=f"[微信] {full_text}",
-                user_id=from_user_id,
-                system_prompt=WECHAT_SYSTEM_PROMPT,
-            )
+            payload = {
+                "session_id": from_user_id,
+                "message": full_text,
+                "channel": self.name
+            }
+            async with httpx.AsyncClient(timeout=GATEWAY_REQUEST_TIMEOUT) as client:
+                gateway_resp = await client.post(GATEWAY_CHAT_API, json=payload)
+                resp_json = gateway_resp.json()
+            reply = resp_json.get("text", "")
 
             if typing_ticket:
                 try:

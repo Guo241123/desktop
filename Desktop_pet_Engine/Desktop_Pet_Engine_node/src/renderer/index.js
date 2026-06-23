@@ -35,7 +35,8 @@ let mixer, model, animations = [];
 const clock = new THREE.Clock();
 
 const loader = new GLTFLoader();
-loader.load('./model/1.glb', (gltf) => {
+const modelUrl = new URL('./model/1.glb', import.meta.url).href;
+loader.load(modelUrl, (gltf) => {
   model = gltf.scene;
 
   const box = new THREE.Box3().setFromObject(model);
