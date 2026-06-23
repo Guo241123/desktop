@@ -44,10 +44,10 @@ async def auto_start_wechat():
     result = await start_wechat_channel()
     logger.info("微信通道自动启动: %s", result.get("msg", ""))
 
-    # 启动每周画像总结后台任务
-    from scheduler.weekly_profile import weekly_profile_loop
-    asyncio.create_task(weekly_profile_loop())
-    logger.info("每周画像定时器已启动")
+    # 启动主动聊天调度器（空闲超时触发 AI 主动对话 + 每周画像总结）
+    from scheduler.proactive_ai import proactive_loop
+    asyncio.create_task(proactive_loop())
+    logger.info("主动聊天调度器已启动（空闲 %d 小时触发）", 2)
 
 @app.get("/")
 def index():
