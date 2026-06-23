@@ -51,9 +51,46 @@ async def stop_channel(req: ChannelActionRequest):
 def channel_status():
     """查看所有通道状态（含登录二维码等详情）"""
     channels = channel_manager.status()
-    # 如果通道有额外登录信息（如二维码），一并返回
     for name, info in channels.items():
         ch = channel_manager.get(name)
         if ch and hasattr(ch, "login_status"):
             info["login"] = ch.login_status
     return {"success": True, "channels": channels}
+
+
+@mi_router.get("/debug-send")
+def debug_send():
+    """调试：检查微信发送上下文，可选测试发送"""
+    ch = channel_manager.get("wechat")
+    if not ch:
+        return {"error": "通道不存在"}
+    
+    info = {
+        "running": ch._running,
+        "has_api": ch._api is not None,
+        "last_user_id": ch._last_user_id or "(空)",
+        "last_context_token": ch._last_context_token[:20] + "..." if ch._last_context_token else "(空)",
+    }
+    if ch._api:
+        info["bot_base_url"] = ch._api.base_url
+        info["bot_token"] = ch._api.bot_token[:20] + "..." if ch._api.bot_token else None
+    
+    ctx = ch.get_send_context() if hasattr(ch, "get_send_context") else None
+    info["send_context"] = ctx is not None
+    
+    # 尝试发测试文件
+    import tempfile, os
+    tmp = tempfile.NamedTemporaryFile(suffix='.txt', delete=False, mode='w', encoding='utf-8')
+    tmp.write("Hello from bot debug test!")
+    tmp.close()
+    
+    from tools.send_to_wechat import send_file_to_wechat
+    try:
+        result = send_file_to_wechat(tmp.name)
+        info["test_result"] = result
+    except Exception as e:
+        info["test_error"] = str(e)
+    finally:
+        os.unlink(tmp.name)
+    
+    return info
