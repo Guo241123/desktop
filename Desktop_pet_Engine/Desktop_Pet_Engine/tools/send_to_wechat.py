@@ -40,11 +40,11 @@ def _run_async(coro):
         return asyncio.run(coro)
 
 
-async def _send_file_async(bot_token: str, to_user_id: str, context_token: str, file_path: Path):
+async def _send_file_async(bot_token: str, bot_base_url: str, to_user_id: str, context_token: str, file_path: Path):
     """上传本地文件到 CDN 并通过微信发送（自动识别类型）"""
     from mi.channels.wechat_api import ILinKAPI
 
-    api = ILinKAPI(bot_token=bot_token)
+    api = ILinKAPI(bot_token=bot_token, bot_base_url=bot_base_url)
     try:
         raw_data = file_path.read_bytes()
         ext = file_path.suffix.lower()
@@ -133,7 +133,8 @@ def send_file_to_wechat(file_path: str):
 
     try:
         _run_async(_send_file_async(
-            bot_token=ctx["bot_token"], to_user_id=ctx["to_user_id"],
+            bot_token=ctx["bot_token"], bot_base_url=ctx["bot_base_url"],
+            to_user_id=ctx["to_user_id"],
             context_token=ctx["context_token"], file_path=path,
         ))
         return f"已将 {path.name} 发送到你的微信！"

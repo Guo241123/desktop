@@ -164,6 +164,7 @@ class WeChatChannel(BaseChannel):
             return None
         return {
             "bot_token": self._api.bot_token,
+            "bot_base_url": self._api.base_url,
             "to_user_id": self._last_user_id,
             "context_token": self._last_context_token,
         }
