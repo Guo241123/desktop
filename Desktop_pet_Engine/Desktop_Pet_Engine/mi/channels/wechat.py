@@ -25,7 +25,7 @@ from mi.media_uploader import (
     build_upload_url, aes_key_to_b64,
 )
 from agent.prompts import WECHAT_SYSTEM_PROMPT
-from config.paths import WECHAT_CREDENTIALS_DIR, WECHAT_CREDENTIALS_FILE, STICKERS_DIR, REMINDERS_FILE
+from config.paths import WECHAT_CREDENTIALS_DIR, WECHAT_CREDENTIALS_FILE, REMINDERS_FILE
 
 logger = logging.getLogger(__name__)
 
@@ -57,62 +57,6 @@ class WeChatChannel(BaseChannel):
         sentences = re.split(r"(?<=[~～。！？!?])", text)
         chunks = [s.strip() for s in sentences if s.strip()]
         return chunks if chunks else [text]
-
-    # ── 表情包 ──────────────────────────────────────────────────
-
-    @staticmethod
-    def _pick_sticker(text: str) -> Optional[Path]:
-        stickers = sorted(STICKERS_DIR.glob("*.*"))
-        if not stickers:
-            return None
-        scores = []
-        for s in stickers:
-            name = s.stem
-            score = sum(1 for ch in name if ch in text)
-            score += random.random() * 0.5
-            scores.append((score, s))
-        scores.sort(key=lambda x: -x[0])
-        return scores[0][1]
-
-    async def _send_sticker(self, to_user_id: str, context_token: str, reply_text: str):
-        """以 1/4 概率上传并发送一张表情包"""
-        if random.random() > 0.25:
-            return
-        sticker_path = self._pick_sticker(reply_text)
-        if not sticker_path:
-            return
-        try:
-            raw_data = sticker_path.read_bytes()
-            compressed = compress_image(raw_data)
-            if compressed is not raw_data:
-                logger.info("表情包压缩: %s → %dKB", sticker_path.name, len(compressed) // 1024)
-
-            ciphertext, aes_key, raw_md5 = aes_encrypt(compressed)
-            filekey = make_filekey()
-            upload_resp = await self._api.get_upload_url(
-                filekey=filekey, to_user_id=to_user_id,
-                file_size=len(ciphertext), aes_key=aes_key.hex(),
-                raw_size=len(compressed), raw_md5=raw_md5,
-            )
-            upload_url = build_upload_url(upload_resp, filekey)
-            if not upload_url:
-                logger.warning("获取上传 URL 失败: %s", upload_resp)
-                return
-
-            download_param = await self._api.upload_cdn(upload_url, ciphertext)
-            if not download_param:
-                logger.warning("CDN 上传失败，无 download_param")
-                return
-
-            aes_key_b64 = aes_key_to_b64(aes_key)
-            await self._api.send_image(
-                to_user_id=to_user_id, context_token=context_token,
-                download_param=download_param, aes_key_b64=aes_key_b64,
-                file_size=len(ciphertext),
-            )
-            logger.info("  -> 表情包: %s", sticker_path.name)
-        except Exception as e:
-            logger.warning("发送表情包失败: %s", e)
 
     async def send_image_file(self, to_user_id: str, context_token: str, file_path: Path):
         """发送本地图片文件到微信"""
@@ -472,8 +416,7 @@ class WeChatChannel(BaseChannel):
                     await self._api.send_message(from_user_id, context_token, chunk)
                     logger.info("  -> 回复: %.50s", chunk)
 
-            if context_token and self._api:
-                await self._send_sticker(from_user_id, context_token, reply)
+            # 表情包由 AI 通过 send_sticker 工具自主决定是否发送
 
         except Exception as e:
             logger.exception("处理微信消息出错: %s", e)

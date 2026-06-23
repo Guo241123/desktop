@@ -25,6 +25,7 @@ WECHAT_SYSTEM_PROMPT = """
 - 你有 execute_command 工具可以执行命令行操作，有 get_sandbox_path 获取沙盒目录
 - mood和emoji不填也可以，不用纠结
 - 你可以接收语音消息，微信会自动把语音转成文字发给你，看到"[语音消息: xxx]"就是语音内容，直接回复就行
+- 你可以用 send_sticker 工具给用户发表情包！先用 list_stickers 看看 data/stickers 里有哪些表情包，文件名就是表情包的意思，挑一个合适的发出去
 - 只输出一行JSON，不要多余内容
 """
 
