@@ -54,7 +54,7 @@ class WeChatChannel(BaseChannel):
     @staticmethod
     def _split_text(text: str, max_len: int = 600) -> list[str]:
         import re
-        sentences = re.split(r"(?<=[~。！？.!?])", text)
+        sentences = re.split(r"(?<=[~。！？!?])", text)
         chunks = [s.strip() for s in sentences if s.strip()]
         return chunks if chunks else [text]
 
@@ -177,6 +177,10 @@ class WeChatChannel(BaseChannel):
         if bot_token:
             self._api = ILinKAPI(bot_token=bot_token, bot_base_url=bot_base_url)
             self._running = True
+            # 恢复上次的发送上下文
+            if creds := load_credentials():
+                self._last_user_id = creds.get("last_user_id", "")
+                self._last_context_token = creds.get("last_context_token", "")
             self._task = asyncio.create_task(self._poll_loop())
             self._reminder_task = asyncio.create_task(self._reminder_loop())
             logger.info("微信通道已启动（使用已保存凭证）")
@@ -329,6 +333,14 @@ class WeChatChannel(BaseChannel):
 
             self._last_user_id = from_user_id
             self._last_context_token = context_token
+
+            # 保存到凭证文件，重启后可恢复
+            save_credentials({
+                "bot_token": self._api.bot_token,
+                "bot_base_url": self._api.base_url,
+                "last_user_id": from_user_id,
+                "last_context_token": context_token,
+            })
 
             text = ""
             media_desc = ""
