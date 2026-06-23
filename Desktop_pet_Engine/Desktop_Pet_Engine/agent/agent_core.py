@@ -58,8 +58,12 @@ def agent_main(message: str, session_id: str = "default", system_prompt: str = N
         if not ai_content:
             resp_dict = {"text": "ok了", "mood": "温柔", "emoji": "😊", "tool": ""}
         else:
+            # 尝试从 ai_content 中提取第一个 JSON 对象
+            import re
+            json_match = re.search(r'\{.*\}', ai_content, re.DOTALL)
+            json_str = json_match.group(0) if json_match else ai_content
             try:
-                resp_dict = json.loads(ai_content)
+                resp_dict = json.loads(json_str)
                 if "text" not in resp_dict:
                     resp_dict = {"text": ai_content, "mood": "assistant", "emoji": "💬"}
             except json.JSONDecodeError:
@@ -73,10 +77,10 @@ def agent_main(message: str, session_id: str = "default", system_prompt: str = N
                 try:
                     from tools.send_to_wechat import send_file_to_wechat
                     result = send_file_to_wechat.invoke({"file_path": file_path})
-                    resp_dict["text"] = f"{result}"
+                    resp_dict = {"text": f"{result}"}
                 except Exception as e:
                     logger.warning("执行 send_file_to_wechat 失败: %s", e)
-                    resp_dict["text"] = f"发文件失败了: {e}"
+                    resp_dict = {"text": f"发文件失败了: {e}"}
 
         reply_text = resp_dict.get("text", "")
 
