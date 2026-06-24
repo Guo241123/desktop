@@ -63,13 +63,12 @@ def update_user_profile(
     if not ok:
         return "⚠️ 保存失败"
 
-    # 自动压缩聊天记忆
+    # 自动压缩聊天记忆（读取全段 → 提取画像 → 几百字总结 → 整段替换）
     mm = MemoryManager(session_id)
-    compressed = mm.compress_memory(keep_last=20)
+    compress_result = mm.compress_memory()
 
     parts = [f"✅ 已更新用户画像（第 {profile['update_count']} 次）"]
     if updated:
         parts.append(f"更新了：{'、'.join(updated)}")
-    if compressed:
-        parts.append("📦 聊天记忆已压缩")
+    parts.append("📦 " + compress_result)
     return " | ".join(parts)

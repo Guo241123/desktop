@@ -86,6 +86,12 @@ async def proactive_loop():
             idle_threshold = BASE_IDLE_MINUTES + random.randint(0, RANDOM_EXTRA_MINUTES)
 
             if minutes >= idle_threshold:
+                # 无聊天记录时跳过主动触发
+                if minutes == float("inf"):
+                    logger.info("尚无聊天记录，跳过主动触发")
+                    await asyncio.sleep(CHECK_INTERVAL)
+                    continue
+
                 check_key = f"proactive_{today}_{now.hour}"
                 already = _LAST_CHECK.get(check_key, "")
 

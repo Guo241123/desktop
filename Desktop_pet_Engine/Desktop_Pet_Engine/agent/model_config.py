@@ -16,6 +16,15 @@ def get_chat_model():
     return ChatOpenAI(
         api_key=get_env("DEEPSEEK_API_KEY"),
         base_url=get_env("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1"),
+        model=get_env("CHAT_MODEL", "deepseek-v4-flash"),
+        temperature=float(get_env("TEMPERATURE", "0.7")),
+    )
+
+def get_chat_pro_model():
+    """获取聊天模型实例"""
+    return ChatOpenAI(
+        api_key=get_env("DEEPSEEK_API_KEY"),
+        base_url=get_env("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1"),
         model=get_env("CHAT_MODEL", "deepseek-v4-pro"),
         temperature=float(get_env("TEMPERATURE", "0.7")),
     )
@@ -28,3 +37,5 @@ def get_embedding_model():
         base_url=get_env("SILICONFLOW_BASE_URL", "https://api.siliconflow.cn/v1/"),
         model=get_env("EMBEDDING_MODEL", "BAAI/bge-m3"),
     )
+
+

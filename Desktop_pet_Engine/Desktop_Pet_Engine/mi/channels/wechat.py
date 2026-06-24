@@ -25,7 +25,7 @@ from mi.media_uploader import (
     build_upload_url, aes_key_to_b64,
 )
 from agent.prompts import WECHAT_SYSTEM_PROMPT
-from config.paths import WECHAT_CREDENTIALS_DIR, WECHAT_CREDENTIALS_FILE, REMINDERS_FILE
+from config.paths import WECHAT_CREDENTIALS_DIR, WECHAT_CREDENTIALS_FILE, REMINDERS_FILE, STICKERS_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +56,14 @@ class WeChatChannel(BaseChannel):
         import re
         sentences = re.split(r"(?<=[~～。！？!?])", text)
         chunks = [s.strip() for s in sentences if s.strip()]
-        return chunks if chunks else [text]
+        # 合并过短的片段（相邻短句合并成一个 chunk）
+        merged = []
+        for chunk in chunks:
+            if merged and len(chunk) < 15 and len(merged[-1]) + len(chunk) <= max_len:
+                merged[-1] += chunk
+            else:
+                merged.append(chunk)
+        return merged if merged else [text]
 
     async def send_image_file(self, to_user_id: str, context_token: str, file_path: Path):
         """发送本地图片文件到微信"""
@@ -399,12 +406,22 @@ class WeChatChannel(BaseChannel):
             except Exception as e:
                 logger.debug("typing 指示器失败: %s", e)
 
-            reply = await route_to_agent(
-                session_id="default",
-                message=f"[微信] {full_text}",
-                user_id=from_user_id,
-                system_prompt=WECHAT_SYSTEM_PROMPT,
-            )
+            # ── /zpi 直接调用压缩记忆工具，不经过 AI ───
+            if full_text.strip().lower().startswith("/zpi"):
+                from tools.profile import update_user_profile
+                try:
+                    result = update_user_profile.invoke({"session_id": "default"})
+                    reply = str(result)
+                except Exception as e:
+                    logger.warning("执行 /zpi 失败: %s", e)
+                    reply = "压缩出错了: %s" % e
+            else:
+                reply = await route_to_agent(
+                    session_id="default",
+                    message=f"[微信] {full_text}",
+                    user_id=from_user_id,
+                    system_prompt=WECHAT_SYSTEM_PROMPT,
+                )
 
             if typing_ticket:
                 try:

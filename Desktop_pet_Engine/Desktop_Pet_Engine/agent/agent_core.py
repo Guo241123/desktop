@@ -59,9 +59,9 @@ def agent_main(message: str, session_id: str = "default", system_prompt: str = N
         if not ai_content:
             resp_dict = {"text": "ok了", "mood": "温柔", "emoji": "😊", "tool": ""}
         else:
-            # 尝试从 ai_content 中提取第一个 JSON 对象
             import re
-            json_match = re.search(r'\{.*\}', ai_content, re.DOTALL)
+            # 尝试从 ai_content 中提取第一个 JSON 对象（非贪婪匹配）
+            json_match = re.search(r'\{.*?\}', ai_content, re.DOTALL)
             json_str = json_match.group(0) if json_match else ai_content
             try:
                 resp_dict = json.loads(json_str)
@@ -78,7 +78,11 @@ def agent_main(message: str, session_id: str = "default", system_prompt: str = N
                         # 整个内容就是残缺 JSON，保底回复
                         resp_dict = {"text": "嗯嗯~", "mood": "温柔", "emoji": "😊", "tool": ""}
                 else:
-                    resp_dict = {"text": ai_content, "mood": "assistant", "emoji": "📝"}
+                    # 没找到 {}：清洗可能泄漏的 JSON 尾部（如 `😎", "mood": "开心"`）
+                    cleaned = re.sub(r'",\s*"[a-z_]+":\s*"[^"]*"\s*,?\s*}?\s*$', '', ai_content)
+                    # 去掉首尾可能残留的引号花括号
+                    cleaned = cleaned.strip().rstrip('}').strip()
+                    resp_dict = {"text": cleaned or ai_content, "mood": "assistant", "emoji": "📝"}
         
         # 解析 tool 字段并执行工具
         tool_name = resp_dict.get("tool", "")
@@ -95,7 +99,7 @@ def agent_main(message: str, session_id: str = "default", system_prompt: str = N
 
         reply_text = resp_dict.get("text", "")
 
-        chat_history.append({"role": "assistant", "content": json.dumps(resp_dict, ensure_ascii=False), "time": datetime.now().isoformat(timespec="seconds")})
+        chat_history.append({"role": "assistant", "content": reply_text, "time": datetime.now().isoformat(timespec="seconds")})
         memory.save_chat_history(chat_history)
         memory.save_record(message, reply_text)
 
