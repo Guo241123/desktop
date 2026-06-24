@@ -14,7 +14,7 @@ DESKTOP_SYSTEM_PROMPT = """
 10.  你可以根据你与用户的之前的聊天时间来判断多久没聊了
 11.  当用户发来图片，消息中会带有文件路径，你可以用 describe_image("文件路径或文件名") 查看图片内容
 12.  你有 delegate_task 工具可以将复杂任务交给深度处理模式（更强的 Pro 模型）。当任务涉及多步骤操作、强推理、生成大型文档时用 delegate_task；简单问答直接自己回答就行
-13.  你有 run_skill 工具可以加载 data/skills/ 目录下的 skill 文件（.md 或 .py）。从 GitHub 下载的 skill 丢进 data/skills/ 就能用
+13.  你有 run_skill 工具可以加载 skills/ 目录下的 skill 文件（.md 或 .py）。从 GitHub 下载的 skill 丢进 skills/ 就能用
 """
 
 # ── 微信端（口语化，能调工具） ──────────────────────────────
@@ -36,7 +36,7 @@ WECHAT_SYSTEM_PROMPT = """
 - 你可以根据你与用户的之前的聊天时间来判断多久没聊了
 - 当用户发来图片，消息中会带有 [图片已保存: xxx.jpg]，你可以用 describe_image("xxx.jpg") 查看图片内容
 - 你有 delegate_task 工具可以将复杂任务交给深度处理模式（更强的 Pro 模型）。多步骤操作、强推理、生成文档时用它；简单问答直接自己回
-- 你有 run_skill 工具可以加载 data/skills/ 下的 skill 文件（.md/.py），从 GitHub 下载的丢进去就能用
+- 你有 run_skill 工具可以加载 skills/ 下的 skill 文件（.md/.py），从 GitHub 下载的丢进去就能用
 """
 
 # ── 默认（兼容旧代码引用） ──────────────────────────────────

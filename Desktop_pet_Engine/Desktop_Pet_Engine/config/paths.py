@@ -5,10 +5,11 @@
 """
 
 from pathlib import Path
-from config.settings import DATA_DIR as _DATA_DIR
+from config.settings import DATA_DIR as _DATA_DIR, ROOT_DIR as _ROOT_DIR
 
-# 重新导出，方便 from config.paths import DATA_DIR
+# 重新导出
 DATA_DIR = _DATA_DIR
+ROOT_DIR = _ROOT_DIR
 
 # ── 数据子目录 ─────────────────────────────────────────────────
 CHAT_MEMORY_DIR = DATA_DIR / "chat_memory"

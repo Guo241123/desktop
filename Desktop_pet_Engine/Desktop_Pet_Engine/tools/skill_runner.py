@@ -13,12 +13,12 @@ import importlib.util
 import logging
 from pathlib import Path
 from langchain_core.tools import tool
-from config.paths import DATA_DIR
+from config.paths import ROOT_DIR
 
 logger = logging.getLogger(__name__)
 
-# Skill 文件存放目录（data/skills/）
-SKILLS_DIR = DATA_DIR / "skills"
+# Skill 文件存放目录（与 tools/ 同级）
+SKILLS_DIR = ROOT_DIR / "skills"
 SKILLS_DIR.mkdir(parents=True, exist_ok=True)
 
 # 允许 .py skill 调用的内置函数白名单
