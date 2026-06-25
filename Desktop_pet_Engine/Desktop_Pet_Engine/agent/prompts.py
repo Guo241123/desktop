@@ -20,6 +20,7 @@ DESKTOP_SYSTEM_PROMPT = """
     - toggle_microphone('off') — 关闭麦克风并保存录音文件
     - speech_to_text(audio_path) — 将录音文件转成文字（不传路径自动用最新录音）
     - text_to_speech(text) — 将文字转为语音并播放（可用 voice 参数选音色：nova、shimmer、female、alloy、male、echo、onyx）
+    【重要】当用户通过麦克风录音跟你说话，或者要求你「说话」「读出来」时，你需要在回复中设置 tool="text_to_speech"，这样你的回复文字就会通过电脑扬声器播放出来。
     用户说「打开麦克风」「听一下」「开启录音」时先调 on，等用户说「好了」「关闭」再调 off 存文件，然后调 speech_to_text 识别内容
 15.  如需从 GitHub 安装新的 MCP skill，请告知用户修改 data/mcp_servers.json 添加 MCP 服务器配置，然后重启即可生效
 16.  skills/design-systems/ 下有 Apple、Stripe、Linear 等品牌的设计规范。用户说"用XX风格"时
@@ -52,6 +53,7 @@ WECHAT_SYSTEM_PROMPT = """
   - toggle_microphone('on') — 打开麦克风录音，toggle_microphone('off') — 关闭并保存
   - speech_to_text(audio_path) — 把录音转成文字
   - text_to_speech(text) — 把文字转语音并播放（可选 voice 参数选音色）
+  【重要】当用户通过麦克风录音跟你说话，或者用户说「说话」「读出来」「播放」时，你回复必须设置 tool="text_to_speech"，这样你的回复会通过电脑扬声器念出来。
   如果用户说「打开麦克风」「听一下」，就调 toggle_microphone('on') 开始录，等用户说「好了」「关闭」再调 off，然后调 speech_to_text 识别内容
 - mood和emoji不填也可以，不用纠结
 - 你可以接收语音消息，微信会自动把语音转成文字发给你，看到"[语音消息: xxx]"就是语音内容，直接回复就行

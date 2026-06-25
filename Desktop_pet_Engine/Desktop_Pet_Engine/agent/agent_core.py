@@ -96,6 +96,35 @@ def agent_main(message: str, session_id: str = "default", system_prompt: str = N
                 except Exception as e:
                     logger.warning("执行 send_file_to_wechat 失败: %s", e)
                     resp_dict = {"text": f"发文件失败了: {e}"}
+        elif tool_name == "text_to_speech":
+            # 特殊处理：把 AI 回复的 text 内容作为朗读内容传给工具
+            speech_text = resp_dict.get("text", "")
+            if speech_text:
+                try:
+                    from tools.voice import text_to_speech
+                    result = text_to_speech.invoke({"text": speech_text})
+                    resp_dict["text"] = f"{result}"
+                    logger.info("TTS 播放: %.60s", speech_text)
+                except Exception as e:
+                    logger.warning("执行 text_to_speech 失败: %s", e)
+                    resp_dict["text"] = f"播放语音失败了: {e}"
+        elif tool_name:
+            # 通用工具调用：查找 all_tools 并执行
+            try:
+                from tools import all_tools as _all_tools
+                target_tool = next((t for t in _all_tools if t.name == tool_name), None)
+                if target_tool:
+                    # 从 response 中提取除 text/mood/emoji/tool 外的参数
+                    tool_args = {k: v for k, v in resp_dict.items()
+                                 if k not in ("text", "mood", "emoji", "tool")}
+                    result = target_tool.invoke(tool_args)
+                    resp_dict["text"] = f"{result}"
+                    resp_dict["tool"] = tool_name
+                    logger.info("工具 %s 执行结果: %.100s", tool_name, str(result))
+                else:
+                    logger.debug("未找到工具: %s", tool_name)
+            except Exception as e:
+                logger.warning("执行工具 %s 失败: %s", tool_name, e)
 
         reply_text = resp_dict.get("text", "")
 
@@ -111,16 +140,4 @@ def agent_main(message: str, session_id: str = "default", system_prompt: str = N
         return {"text": "服务出错啦，稍后再试~", "mood": "error", "emoji": "⚠️"}
 
 
-def direct_chat(message: str, system_prompt: str = None) -> str:
-    """纯文本聊天 — 不走 Agent/工具/JSON，直接调 LLM 返回文字"""
-    try:
-        from langchain_core.messages import HumanMessage, SystemMessage
 
-        if system_prompt is None:
-            system_prompt = "你是一个口语化的聊天伙伴，像我朋友一样自然聊天就好。"
-        msgs = [SystemMessage(content=system_prompt), HumanMessage(content=message)]
-        reply = llm.invoke(msgs)
-        return reply.content.strip()
-    except Exception as e:
-        logger.exception("直接聊天出错: %s", e)
-        return "服务出错啦，稍后再试~"
