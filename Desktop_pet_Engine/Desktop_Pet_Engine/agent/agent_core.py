@@ -8,6 +8,7 @@
 from datetime import datetime
 import json
 import logging
+import re
 from langchain.agents import create_agent
 from agent.model_config import get_chat_model
 from agent.prompts import SYSTEM_PROMPT
@@ -43,6 +44,67 @@ def _inject_profile(chat_history: list, session_id: str) -> list:
     return chat_history
 
 
+def _parse_ai_response(ai_content: str) -> dict:
+    """解析 AI 的 JSON 回复，容错处理"""
+    if not ai_content:
+        return {"text": "ok了", "mood": "温柔", "emoji": "😊", "tool": ""}
+
+    json_match = re.search(r'\{.*?\}', ai_content, re.DOTALL)
+    json_str = json_match.group(0) if json_match else ai_content
+    try:
+        resp_dict = json.loads(json_str)
+        if "text" not in resp_dict:
+            resp_dict = {"text": ai_content, "mood": "assistant", "emoji": "💬"}
+        return resp_dict
+    except json.JSONDecodeError:
+        if json_match:
+            before_json = ai_content[:json_match.start()].strip()
+            if before_json:
+                return {"text": before_json, "mood": "assistant", "emoji": "💬"}
+            return {"text": "嗯嗯~", "mood": "温柔", "emoji": "😊", "tool": ""}
+        else:
+            cleaned = re.sub(r'",\s*"[a-z_]+":\s*"[^"]*"\s*,?\s*}?\s*$', '', ai_content)
+            cleaned = cleaned.strip().rstrip('}').strip()
+            return {"text": cleaned or ai_content, "mood": "assistant", "emoji": "📝"}
+
+
+def _invoke_llm(chat_history: list, session_id: str, system_prompt: str = None) -> str:
+    """调用 LLM 并返回原始回复内容"""
+    enhanced = _inject_profile(chat_history, session_id)
+    res = get_agent(system_prompt).invoke({"messages": enhanced})
+    raw = res["messages"][-1].content
+    return raw.strip() if isinstance(raw, str) else str(raw).strip()
+
+
+def _extract_filepath(text: str) -> str | None:
+    """从 '录音已保存: C:\\path\\to\\file.wav（3.5秒）' 中提取路径"""
+    m = re.search(r"([A-Za-z]:\\[^\s（）)]+)", text)
+    return m.group(1) if m else None
+
+
+def _run_voice_chain(filepath: str, chat_history: list, session_id: str, system_prompt: str) -> str:
+    """语音链：转文字 → LLM 理解 → 文字转语音，返回播放结果"""
+    from tools.voice import speech_to_text, text_to_speech
+
+    # Step 1: ASR
+    transcribe_result = speech_to_text.invoke({"audio_path": filepath})
+    logger.info("语音链·转文字: %.100s", transcribe_result)
+
+    # Step 2: 把识别结果喂给 AI
+    chat_history.append({"role": "user", "content": f"[语音识别结果: {transcribe_result}]"})
+    ai_reply = _invoke_llm(chat_history, session_id, system_prompt)
+    logger.info("语音链·AI回复: %.60s", ai_reply)
+    reply_dict = _parse_ai_response(ai_reply)
+    reply_text = reply_dict.get("text", "")
+    if not reply_text:
+        return "嗯嗯~"
+
+    # Step 3: TTS 朗读
+    speak_result = text_to_speech.invoke({"text": reply_text})
+    logger.info("语音链·TTS: %.60s", speak_result)
+    return f"{speak_result}（原话: {reply_text}）"
+
+
 def agent_main(message: str, session_id: str = "default", system_prompt: str = None) -> dict:
     """主聊天逻辑（走 Agent，JSON 输出格式）"""
     try:
@@ -50,44 +112,15 @@ def agent_main(message: str, session_id: str = "default", system_prompt: str = N
         chat_history = memory.load_chat_history()
         chat_history.append({"role": "user", "content": message, "time": datetime.now().isoformat(timespec="seconds")})
 
-        enhanced_history = _inject_profile(chat_history, session_id)
+        ai_content = _invoke_llm(chat_history, session_id, system_prompt)
+        resp_dict = _parse_ai_response(ai_content)
 
-        res = get_agent(system_prompt).invoke({"messages": enhanced_history})
-        raw_content = res["messages"][-1].content
-        ai_content = raw_content.strip() if isinstance(raw_content, str) else str(raw_content).strip()
-
-        if not ai_content:
-            resp_dict = {"text": "ok了", "mood": "温柔", "emoji": "😊", "tool": ""}
-        else:
-            import re
-            # 尝试从 ai_content 中提取第一个 JSON 对象（非贪婪匹配）
-            json_match = re.search(r'\{.*?\}', ai_content, re.DOTALL)
-            json_str = json_match.group(0) if json_match else ai_content
-            try:
-                resp_dict = json.loads(json_str)
-                if "text" not in resp_dict:
-                    resp_dict = {"text": ai_content, "mood": "assistant", "emoji": "💬"}
-            except json.JSONDecodeError:
-                # JSON 解析失败：如果正则找到了 {} 但解析失败，
-                # 尝试取 {} 前面的文本（AI 经常在 JSON 前写闲聊）
-                if json_match:
-                    before_json = ai_content[:json_match.start()].strip()
-                    if before_json:
-                        resp_dict = {"text": before_json, "mood": "assistant", "emoji": "💬"}
-                    else:
-                        # 整个内容就是残缺 JSON，保底回复
-                        resp_dict = {"text": "嗯嗯~", "mood": "温柔", "emoji": "😊", "tool": ""}
-                else:
-                    # 没找到 {}：清洗可能泄漏的 JSON 尾部（如 `😎", "mood": "开心"`）
-                    cleaned = re.sub(r'",\s*"[a-z_]+":\s*"[^"]*"\s*,?\s*}?\s*$', '', ai_content)
-                    # 去掉首尾可能残留的引号花括号
-                    cleaned = cleaned.strip().rstrip('}').strip()
-                    resp_dict = {"text": cleaned or ai_content, "mood": "assistant", "emoji": "📝"}
-        
         # 解析 tool 字段并执行工具
         tool_name = resp_dict.get("tool", "")
+        action = resp_dict.get("action", "")
+
         if tool_name == "send_file_to_wechat":
-            file_path = resp_dict.pop("file_path", "")
+            file_path = resp_dict.get("file_path", "")
             if file_path:
                 try:
                     from tools.send_to_wechat import send_file_to_wechat
@@ -96,8 +129,8 @@ def agent_main(message: str, session_id: str = "default", system_prompt: str = N
                 except Exception as e:
                     logger.warning("执行 send_file_to_wechat 失败: %s", e)
                     resp_dict = {"text": f"发文件失败了: {e}"}
+
         elif tool_name == "text_to_speech":
-            # 特殊处理：把 AI 回复的 text 内容作为朗读内容传给工具
             speech_text = resp_dict.get("text", "")
             if speech_text:
                 try:
@@ -108,19 +141,24 @@ def agent_main(message: str, session_id: str = "default", system_prompt: str = N
                 except Exception as e:
                     logger.warning("执行 text_to_speech 失败: %s", e)
                     resp_dict["text"] = f"播放语音失败了: {e}"
+
         elif tool_name:
-            # 通用工具调用：查找 all_tools 并执行
             try:
-                from tools import all_tools as _all_tools
-                target_tool = next((t for t in _all_tools if t.name == tool_name), None)
+                target_tool = next((t for t in all_tools if t.name == tool_name), None)
                 if target_tool:
-                    # 从 response 中提取除 text/mood/emoji/tool 外的参数
                     tool_args = {k: v for k, v in resp_dict.items()
                                  if k not in ("text", "mood", "emoji", "tool")}
                     result = target_tool.invoke(tool_args)
                     resp_dict["text"] = f"{result}"
-                    resp_dict["tool"] = tool_name
                     logger.info("工具 %s 执行结果: %.100s", tool_name, str(result))
+
+                    # ── 语音链：关麦克风后自动转文字 → 思考 → 说话 ──
+                    if tool_name == "toggle_microphone" and action == "off":
+                        filepath = _extract_filepath(resp_dict["text"])
+                        if filepath:
+                            chain_result = _run_voice_chain(filepath, chat_history, session_id, system_prompt)
+                            resp_dict["text"] = chain_result
+                            resp_dict["tool"] = "voice_chain"
                 else:
                     logger.debug("未找到工具: %s", tool_name)
             except Exception as e:
@@ -138,6 +176,3 @@ def agent_main(message: str, session_id: str = "default", system_prompt: str = N
     except Exception as e:
         logger.exception("服务异常: %s", e)
         return {"text": "服务出错啦，稍后再试~", "mood": "error", "emoji": "⚠️"}
-
-
-
