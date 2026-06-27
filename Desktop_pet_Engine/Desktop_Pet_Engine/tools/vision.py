@@ -13,8 +13,7 @@ from config.paths import STICKERS_DIR
 
 logger = logging.getLogger(__name__)
 
-# ── 配置 ─────────────────────────────────────────────────
-# 从阿里云 DashScope（百炼）获取：https://help.aliyun.com/zh/model-studio/
+
 DASHSCOPE_API_KEY = "sk-ws-H.RYDMIDL.mBpe.MEQCIEV0bs7iFUlKSjhB8EN_yz6RXhxhWwhv7_ZzFH6BADbwAiBLgdK4f0E79GLAj3N9E9bdNdNNImtp_XOr67aKyMbFTw"  # ← 把你的 DashScope API Key 填在这里
 
 VISION_MODEL = "qwen-vl-plus"  # 或 qwen-vl-max、qwen2.5-vl-72b-instruct

@@ -25,7 +25,7 @@ SUB_AGENT_SYSTEM_PROMPT = """你是 Guo 的深度思考模式，在处理复杂�
 """
 
 # 子代理递归上限（思考+工具调用总轮次）
-SUB_AGENT_RECURSION_LIMIT = 30
+SUB_AGENT_RECURSION_LIMIT = 60
 
 
 @tool

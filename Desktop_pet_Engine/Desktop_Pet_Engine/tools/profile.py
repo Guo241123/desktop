@@ -71,4 +71,35 @@ def update_user_profile(
     if updated:
         parts.append(f"更新了：{'、'.join(updated)}")
     parts.append("📦 " + compress_result)
+
+    # 🧹 清理缓存文件（语音、临时图片等）
+    cleaned = []
+    import shutil
+    from pathlib import Path
+    from config.paths import DATA_DIR
+
+    for sub_dir, keep_latest in [("voice", 1), ("search_img", 0), ("sandbox", 0), ("received", 0)]:
+        dir_path = DATA_DIR / sub_dir
+        if not dir_path.exists():
+            continue
+        files = sorted(dir_path.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True)
+
+        if keep_latest > 0:
+            # 保留最新的 N 个文件
+            to_delete = files[keep_latest:]
+        else:
+            to_delete = files
+
+        for f in to_delete:
+            try:
+                if f.is_file():
+                    f.unlink()
+                    cleaned.append(f.name)
+            except Exception:
+                pass
+
+    if cleaned:
+        parts.append(f"🧹 清理了 {len(cleaned)} 个缓存文件")
+        logger.info("缓存清理: 删除了 %d 个文件（%s）", len(cleaned), sub_dir)
+
     return " | ".join(parts)

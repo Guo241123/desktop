@@ -136,11 +136,12 @@ def agent_main(message: str, session_id: str = "default", system_prompt: str = N
                 try:
                     from tools.voice import text_to_speech
                     result = text_to_speech.invoke({"text": speech_text})
-                    resp_dict["text"] = f"{result}"
-                    logger.info("TTS 播放: %.60s", speech_text)
+                    # 保留原回复文字，TTS 播放状态额外记录
+                    resp_dict["tool_result"] = str(result)
+                    logger.info("TTS 播放完毕: %.60s | %s", speech_text, result)
                 except Exception as e:
                     logger.warning("执行 text_to_speech 失败: %s", e)
-                    resp_dict["text"] = f"播放语音失败了: {e}"
+                    resp_dict["tool_result"] = f"播放语音失败了: {e}"
 
         elif tool_name:
             try:

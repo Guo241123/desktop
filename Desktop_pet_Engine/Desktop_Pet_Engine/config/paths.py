@@ -21,9 +21,10 @@ STICKERS_DIR = DATA_DIR / "stickers"
 REMINDERS_FILE = DATA_DIR / "reminders.json"
 SANDBOX_DIR = DATA_DIR / "sandbox"
 USER_PROFILE_DIR = DATA_DIR / "user_profiles"
+SKILLS_DIR = DATA_DIR / "skills"
 
 
 def ensure_dirs():
     """确保所有数据目录存在"""
-    for d in [CHAT_MEMORY_DIR, VECTOR_DB_DIR, SEARCH_IMG_DIR, STICKERS_DIR, SANDBOX_DIR, USER_PROFILE_DIR]:
+    for d in [CHAT_MEMORY_DIR, VECTOR_DB_DIR, SEARCH_IMG_DIR, STICKERS_DIR, SANDBOX_DIR, USER_PROFILE_DIR, SKILLS_DIR]:
         d.mkdir(parents=True, exist_ok=True)

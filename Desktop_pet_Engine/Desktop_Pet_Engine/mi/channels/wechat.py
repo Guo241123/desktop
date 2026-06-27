@@ -157,12 +157,19 @@ class WeChatChannel(BaseChannel):
             print("  请使用微信扫描下方二维码登录 Bot")
             print("=" * 60)
             if qrcode_url:
-                webbrowser.open(qrcode_url)
+                try:
+                    webbrowser.open(qrcode_url)
+                except Exception:
+                    pass  # 无浏览器环境时静默跳过
                 print(f"  二维码图片: {qrcode_url}")
             qr = qrcode.QRCode(version=3, error_correction=qrcode.constants.ERROR_CORRECT_H, box_size=1, border=1)
             qr.add_data(qrcode_url or qrcode_id)
             qr.make(fit=True)
-            qr.print_ascii(invert=True)
+            try:
+                qr.print_ascii(invert=True)
+            except UnicodeEncodeError:
+                # GBK 控制台无法打印 UTF-8 字符时降级
+                print(f"  二维码ID: {qrcode_id}")
             print("=" * 60)
             print("")
 
@@ -433,6 +440,16 @@ class WeChatChannel(BaseChannel):
                 for chunk in self._split_text(reply, max_len=600):
                     await self._api.send_message(from_user_id, context_token, chunk)
                     logger.info("  -> 回复: %.50s", chunk)
+
+            # ── 语音安全网：用户提到语音相关词时自动朗读回复 ──
+            voice_keywords = ("语音", "说话", "出声", "朗读", "念", "说给我听", "能不能说话", "开口", "听到")
+            if any(kw in full_text for kw in voice_keywords):
+                try:
+                    from tools.voice import text_to_speech
+                    tts_result = text_to_speech.invoke({"text": reply})
+                    logger.info("自动语音播放: %.60s", tts_result)
+                except Exception as e:
+                    logger.warning("自动语音播放失败: %s", e)
 
             # 表情包由 AI 通过 send_sticker 工具自主决定是否发送
 

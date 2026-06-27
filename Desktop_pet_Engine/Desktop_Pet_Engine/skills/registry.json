@@ -1,0 +1,44 @@
+{
+  "frontend-slides-editable": {
+    "name": "frontend-slides-editable",
+    "description": "Use when the user wants a single-file HTML presentation that stays editable in the browser after generation, or needs object-level layout editing, slide reordering, local save/export, or PPT/PDF-to-web conversion with continued editing.",
+    "source": "https://github.com/archlizheng/frontend-slides-editable",
+    "path": "E:\\File\\Desktop_pet_Engine1\\Desktop_pet_Engine\\data\\skills\\frontend-slides-editable",
+    "repo": "archlizheng/frontend-slides-editable"
+  },
+  "minimax-docx": {
+    "name": "minimax-docx",
+    "description": ">",
+    "source": "https://github.com/MiniMax-AI/skills",
+    "path": "E:\\File\\Desktop_pet_Engine1\\Desktop_pet_Engine\\Desktop_Pet_Engine\\skills\\minimax-skills\\skills\\minimax-docx",
+    "repo": "MiniMax-AI/skills"
+  },
+  "minimax-xlsx": {
+    "name": "minimax-xlsx",
+    "description": "\"Open, create, read, analyze, edit, or validate Excel/spreadsheet files (.xlsx, .xlsm, .csv, .tsv). Use when the user asks to create, build, modify, analyze, read, validate, or format any Excel spreadsheet, financial model, pivot table, or tabular data file. Covers: creating new xlsx from scratch, reading and analyzing existing files, editing existing xlsx with zero format loss, formula recalculation and validation, and applying professional financial formatting standards. Triggers on 'spreadsheet', 'Excel', '.xlsx', '.csv', 'pivot table', 'financial model', 'formula', or any request to produce tabular data in Excel format.\"",
+    "source": "https://github.com/MiniMax-AI/skills",
+    "path": "E:\\File\\Desktop_pet_Engine1\\Desktop_pet_Engine\\Desktop_Pet_Engine\\skills\\minimax-skills\\skills\\minimax-xlsx",
+    "repo": "MiniMax-AI/skills"
+  },
+  "pptx-generator": {
+    "name": "pptx-generator",
+    "description": "\"Generate, edit, and read PowerPoint presentations. Create from scratch with PptxGenJS (cover, TOC, content, section divider, summary slides), edit existing PPTX via XML workflows, or extract text with markitdown. Triggers: PPT, PPTX, PowerPoint, presentation, slide, deck, slides.\"",
+    "source": "https://github.com/MiniMax-AI/skills",
+    "path": "E:\\File\\Desktop_pet_Engine1\\Desktop_pet_Engine\\Desktop_Pet_Engine\\skills\\minimax-skills\\skills\\pptx-generator",
+    "repo": "MiniMax-AI/skills"
+  },
+  "minimax-pdf": {
+    "name": "minimax-pdf",
+    "description": ">",
+    "source": "https://github.com/MiniMax-AI/skills",
+    "path": "E:\\File\\Desktop_pet_Engine1\\Desktop_pet_Engine\\Desktop_Pet_Engine\\skills\\minimax-skills\\skills\\minimax-pdf",
+    "repo": "MiniMax-AI/skills"
+  },
+  "my-coffee": {
+    "name": "my-coffee",
+    "description": "Use when users ask to order Luckin Coffee, search Luckin stores/products, query pickup code/order status, cancel a Luckin order, or mention ÈðÐÒ¡¢luckin¡¢¿§·È",
+    "source": "E:\ÆäËû\my-coffee-skill",
+    "path": "E:\\File\\Desktop_pet_Engine1\\Desktop_pet_Engine\\Desktop_Pet_Engine\\skills\\my-coffee",
+    "repo": "local"
+  }
+}
